@@ -14,28 +14,39 @@ public class DeepCodeRestApiTest {
     LoginResponse response = DeepCodeRestApi.newLogin();
     assertNotNull(response);
     assertEquals(
-        "https://www.deepcode.ai/login-api?sessionToken=" + response.sessionToken,
-        response.loginURL);
-    //    System.out.println(response.loginURL);
+        "https://www.deepcode.ai/login-api?sessionToken=" + response.getSessionToken(),
+        response.getLoginURL());
+    System.out.println(
+        "New login request passed with returned:"
+            + "\nsession token: "
+            + response.getSessionToken()
+            + "\nlogin URL: "
+            + response.getLoginURL());
   }
 
   @Test
   public void checkSession() {
-    int status = DeepCodeRestApi.checkSession("");
+    String token = "";
+    int status = DeepCodeRestApi.checkSession(token);
+    System.out.printf("Check Session call with token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(401, status);
 
-    status = DeepCodeRestApi.checkSession("blablabla");
+    token = "blablabla";
+    status = DeepCodeRestApi.checkSession(token);
+    System.out.printf("Check Session call with token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(401, status);
 
     LoginResponse response = DeepCodeRestApi.newLogin();
     assertNotNull(response);
-    status = DeepCodeRestApi.checkSession(response.sessionToken);
+    token = response.getSessionToken();
+    status = DeepCodeRestApi.checkSession(token);
+    System.out.printf("Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(304, status);
 
     // !!! Will works only with already logged sessionToken
-    //    status =
-    // DeepCodeRestApi.checkSession("aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e");
-    //    assertEquals(200, status);
-
+    token = "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
+    status = DeepCodeRestApi.checkSession(token);
+    System.out.printf("Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
+    assertEquals(200, status);
   }
 }
