@@ -3,14 +3,24 @@
  */
 package ai.deepcode.javaclient;
 
+import ai.deepcode.javaclient.requests.FileContent;
+import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
+import java.util.Arrays;
+import java.util.Collections;
+
 import static org.junit.Assert.*;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeRestApiTest {
 
   @Test
-  public void newLogin() {
+  public void _010_newLogin() {
     LoginResponse response = DeepCodeRestApi.newLogin();
     assertNotNull(response);
     assertEquals(
@@ -25,7 +35,7 @@ public class DeepCodeRestApiTest {
   }
 
   @Test
-  public void checkSession() {
+  public void _020_checkSession() {
     String token = "";
     int status = DeepCodeRestApi.checkSession(token);
     System.out.printf("Check Session call with token [%1$s] return [%2$d] code.\n", token, status);
@@ -40,13 +50,55 @@ public class DeepCodeRestApiTest {
     assertNotNull(response);
     token = response.getSessionToken();
     status = DeepCodeRestApi.checkSession(token);
-    System.out.printf("Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n", token, status);
+    System.out.printf(
+        "Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n",
+        token, status);
     assertEquals(304, status);
 
     // !!! Will works only with already logged sessionToken
     token = "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
     status = DeepCodeRestApi.checkSession(token);
-    System.out.printf("Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
+    System.out.printf(
+        "Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(200, status);
+  }
+
+  @Test
+  public void _030_createBundle() {
+    // !!! Will works only with already logged sessionToken
+    String token = "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
+    int status = DeepCodeRestApi.checkSession(token);
+    assertEquals(200, status);
+    FileContent fileContent =
+        new FileContent(
+            "/test.js",
+            "(function($) { \n"
+                + "    \n"
+                + "    var todos = storage.getTODOs(pullRequestJson).filter(function(todo) {}); \n"
+                + "    \n"
+                + "}(AJS.$));");
+    FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
+    CreateBundleResponse response = DeepCodeRestApi.createBundle(token, files);
+    assertNotNull(response);
+    System.out.printf("Create Bundle call return next BundleId: [%1$s]\n", response.getBundleId());
+
+    try {
+      DeepCodeRestApi.createBundle("fff", files);
+      assertNotNull(
+          "Create Bundle call with malformed token should not be accepted by server", null);
+    } catch (Exception e) {
+      System.out.println(
+          "Create Bundle call with malformed token [fff] is not accepted by server.");
+    }
+
+    try {
+      DeepCodeRestApi.createBundle(token, new FileContentRequest(Collections.emptyList()));
+      assertNotNull(
+          "Create Bundle call with malformed (empty) files array should not be accepted by server",
+          null);
+    } catch (Exception e) {
+      System.out.println(
+          "Create Bundle call with malformed (empty) files array is not accepted by server.");
+    }
   }
 }

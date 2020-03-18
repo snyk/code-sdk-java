@@ -3,16 +3,17 @@
  */
 package ai.deepcode.javaclient;
 
+import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
@@ -31,13 +32,11 @@ public final class DeepCodeRestApi {
 
   private static String API_URL = "https://www.deepcode.ai/publicapi/";
 
-  private static final Gson lenientGson = new GsonBuilder().setLenient().create();
-
   // Create simple REST adapter which points the API_URL.
   private static final Retrofit retrofit =
       new Retrofit.Builder()
           .baseUrl(API_URL)
-          .addConverterFactory(GsonConverterFactory.create(lenientGson))
+          .addConverterFactory(GsonConverterFactory.create())
           .build();
 
   private interface LoginCall {
@@ -63,7 +62,7 @@ public final class DeepCodeRestApi {
 
   private interface CheckSessionCall {
     @GET("session")
-    Call<String> doCheckSession(@Header("Session-Token") String token);
+    Call<Void> doCheckSession(@Header("Session-Token") String token);
   }
 
   /**
@@ -76,9 +75,7 @@ public final class DeepCodeRestApi {
     CheckSessionCall checkSessionCall = retrofit.create(CheckSessionCall.class);
     int statusCode = 0;
     try {
-      Call<String> call = checkSessionCall.doCheckSession(token);
-      Response<String> response = call.execute();
-      statusCode = response.code();
+      statusCode = checkSessionCall.doCheckSession(token).execute().code();
     } catch (IOException e) {
       final String msg = "Error while checking login session status: ";
       LOGGER.error(msg, e);
@@ -102,5 +99,32 @@ public final class DeepCodeRestApi {
         }
     */
     return statusCode;
+  }
+
+  private interface CreateBundleCall {
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @POST("bundle")
+    Call<CreateBundleResponse> doCreateBundle(
+        @Header("Session-Token") String token, @Body FileContentRequest files);
+  }
+
+  /**
+   * Creates a new bundle.
+   *
+   * @return CreateBundleResponse with bundleId or throw Exception if not succeed.
+   */
+  // todo: error handling
+  public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
+    CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
+    try {
+      Response<CreateBundleResponse> response = createBundleCall.doCreateBundle(token, files).execute();
+      if (response.code() != 200)
+        throw new IOException("Returned status code = " + response.code());
+      return response.body();
+    } catch (IOException e) {
+      final String msg = "Error while creating a new bundle: ";
+      LOGGER.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
   }
 }
