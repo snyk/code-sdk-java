@@ -5,11 +5,10 @@ package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContentRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
+import ai.deepcode.javaclient.responses.EmptyResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -24,7 +23,7 @@ import java.io.IOException;
  */
 public final class DeepCodeRestApi {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
+//  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
 
   private DeepCodeRestApi() {}
 
@@ -43,17 +42,18 @@ public final class DeepCodeRestApi {
     Call<LoginResponse> doNewLogin();
   }
 
-  /** Requests the creation of a new login session. */
-  // todo: Status Code checks, error handling
-  public static LoginResponse newLogin() {
+  /**
+   * Requests the creation of a new login session.
+   *
+   * @return {@link LoginResponse} instance or null if not succeed
+   * @throws IOException see {@link Call#execute()}
+   */
+  public static LoginResponse newLogin() throws IOException {
     LoginCall loginCall = retrofit.create(LoginCall.class);
-    LoginResponse loginResponse = null;
-    try {
-      loginResponse = loginCall.doNewLogin().execute().body();
-    } catch (IOException e) {
-      final String msg = "Error while requesting new login: ";
-      LOGGER.error(msg, e);
-      throw new RuntimeException(msg, e);
+    final Response<LoginResponse> retrofitResponse = loginCall.doNewLogin().execute();
+    LoginResponse loginResponse = retrofitResponse.body();
+    if (loginResponse != null) {
+      loginResponse.setStatusCode(retrofitResponse.code());
     }
     return loginResponse;
   }
@@ -66,19 +66,14 @@ public final class DeepCodeRestApi {
   /**
    * Checks status of the login process.
    *
-   * @return Status Code
+   * @return {@link EmptyResponse} instance or null if not succeed
+   * @throws IOException see {@link Call#execute()}
    */
-  // todo: error handling
-  public static int checkSession(String token) {
+  public static EmptyResponse checkSession(String token) throws IOException {
     CheckSessionCall checkSessionCall = retrofit.create(CheckSessionCall.class);
-    int statusCode = 0;
-    try {
-      statusCode = checkSessionCall.doCheckSession(token).execute().code();
-    } catch (IOException e) {
-      final String msg = "Error while checking login session status: ";
-      LOGGER.error(msg, e);
-      throw new RuntimeException(msg, e);
-    }
+    final EmptyResponse result = new EmptyResponse();
+    final Response<Void> retrofitResponse = checkSessionCall.doCheckSession(token).execute();
+    result.setStatusCode(retrofitResponse.code());
     /*    String text;
         switch (status) {
           case 200:
@@ -96,7 +91,7 @@ public final class DeepCodeRestApi {
             break;
         }
     */
-    return statusCode;
+    return result;
   }
 
   private interface CreateBundleCall {
@@ -109,22 +104,21 @@ public final class DeepCodeRestApi {
   /**
    * Creates a new bundle.
    *
-   * @return CreateBundleResponse with bundleId or throw Exception if not succeed.
+   * @return {@link CreateBundleResponse} instance or null if not succeed
+   * @throws IOException see {@link Call#execute()}
    */
-  // todo: error handling
-  public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
+  public static CreateBundleResponse createBundle(String token, FileContentRequest files)
+      throws IOException {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
-    try {
-      Response<CreateBundleResponse> response =
-          createBundleCall.doCreateBundle(token, files).execute();
-      if (response.code() != 200)
-        throw new IOException("Returned status code = " + response.code());
-      return response.body();
-    } catch (IOException e) {
-      final String msg = "Error while creating a new bundle: ";
-      LOGGER.error(msg, e);
-      throw new RuntimeException(msg, e);
+    Response<CreateBundleResponse> retrofitResponse =
+        createBundleCall.doCreateBundle(token, files).execute();
+    final CreateBundleResponse createBundleResponse = retrofitResponse.body();
+    if (createBundleResponse != null) {
+      createBundleResponse.setStatusCode(retrofitResponse.code());
+    } else {
+      return new CreateBundleResponse(retrofitResponse.code());
     }
+    return createBundleResponse;
   }
 
   private interface GetAnalysisCall {
@@ -138,21 +132,17 @@ public final class DeepCodeRestApi {
   /**
    * Starts a new bundle analysis or checks its current status and available results.
    *
-   * @return {@link GetAnalysisResponse} or throw Exception if not succeed.
+   * @return {@link GetAnalysisResponse} instance or null if not succeed
+   * @throws IOException see {@link Call#execute()}
    */
-  // todo: error handling
-  public static GetAnalysisResponse getAnalysis(String token, String bundleId) {
+  public static GetAnalysisResponse getAnalysis(String token, String bundleId) throws IOException {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
-    try {
-      Response<GetAnalysisResponse> response =
-          getAnalysisCall.doGetAnalysis(token, bundleId).execute();
-      if (response.code() != 200)
-        throw new IOException("Returned status code = " + response.code());
-      return response.body();
-    } catch (IOException e) {
-      final String msg = "Error while getting analysis: ";
-      LOGGER.error(msg, e);
-      throw new RuntimeException(msg, e);
+    Response<GetAnalysisResponse> retrofitResponse =
+        getAnalysisCall.doGetAnalysis(token, bundleId).execute();
+    final GetAnalysisResponse getAnalysisResponse = retrofitResponse.body();
+    if (getAnalysisResponse != null) {
+      getAnalysisResponse.setStatusCode(retrofitResponse.code());
     }
+    return getAnalysisResponse;
   }
 }

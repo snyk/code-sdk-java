@@ -1,11 +1,19 @@
 package ai.deepcode.javaclient.responses;
 
+import java.util.Collections;
 import java.util.List;
 
-public class CreateBundleResponse {
+public class CreateBundleResponse extends EmptyResponse {
   private final String bundleId;
   private final List<String> missingFiles;
   private final String uploadURL;
+
+  public CreateBundleResponse(int statusCode) {
+    this.bundleId = "";
+    this.missingFiles = Collections.emptyList();
+    this.uploadURL = "";
+    setStatusCode(statusCode);
+  }
 
   public CreateBundleResponse(String bundleId, List<String> missingFiles, String uploadURL) {
     this.bundleId = bundleId;

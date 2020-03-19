@@ -1,8 +1,6 @@
 package ai.deepcode.javaclient.responses;
 
-import com.google.gson.JsonElement;
-
-public class GetAnalysisResponse {
+public class GetAnalysisResponse extends EmptyResponse {
   private final String status;
   private final int progress;
   private final String analysisURL;

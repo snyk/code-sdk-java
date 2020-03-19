@@ -1,6 +1,6 @@
 package ai.deepcode.javaclient.responses;
 
-public class LoginResponse {
+public class LoginResponse extends EmptyResponse {
   private final String sessionToken;
   private final String loginURL;
 
