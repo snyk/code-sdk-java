@@ -6,6 +6,7 @@ package ai.deepcode.javaclient;
 import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
+import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -18,6 +19,13 @@ import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeRestApiTest {
+
+  private final String testFileContent =
+      "(function($) { \n"
+          + "    \n"
+          + "    var todos = storage.getTODOs(pullRequestJson).filter(function(todo) {}); \n"
+          + "    \n"
+          + "}(AJS.$));";
 
   @Test
   public void _010_newLogin() {
@@ -69,14 +77,7 @@ public class DeepCodeRestApiTest {
     String token = "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
     int status = DeepCodeRestApi.checkSession(token);
     assertEquals(200, status);
-    FileContent fileContent =
-        new FileContent(
-            "/test.js",
-            "(function($) { \n"
-                + "    \n"
-                + "    var todos = storage.getTODOs(pullRequestJson).filter(function(todo) {}); \n"
-                + "    \n"
-                + "}(AJS.$));");
+    FileContent fileContent = new FileContent("/test.js", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
     CreateBundleResponse response = DeepCodeRestApi.createBundle(token, files);
     assertNotNull(response);
@@ -100,5 +101,16 @@ public class DeepCodeRestApiTest {
       System.out.println(
           "Create Bundle call with malformed (empty) files array is not accepted by server.");
     }
+  }
+
+  @Test
+  public void _040_getAnalysis() {
+    // !!! Will works only with already logged sessionToken and prefetched bundleId
+    String token = "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
+    String bundleId =
+        "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
+    GetAnalysisResponse response = DeepCodeRestApi.getAnalysis(token, bundleId);
+    System.out.println("Get Analysis call for test file: \n" + testFileContent +"\nreturns: " + response);
+    //    assertEquals("DONE", response.getStatus());
   }
 }

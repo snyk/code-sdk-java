@@ -5,6 +5,7 @@ package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContentRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
+import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 
 import org.slf4j.Logger;
@@ -13,10 +14,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.http.Body;
-import retrofit2.http.GET;
-import retrofit2.http.Header;
-import retrofit2.http.POST;
+import retrofit2.http.*;
 
 import java.io.IOException;
 
@@ -117,12 +115,42 @@ public final class DeepCodeRestApi {
   public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
     try {
-      Response<CreateBundleResponse> response = createBundleCall.doCreateBundle(token, files).execute();
+      Response<CreateBundleResponse> response =
+          createBundleCall.doCreateBundle(token, files).execute();
       if (response.code() != 200)
         throw new IOException("Returned status code = " + response.code());
       return response.body();
     } catch (IOException e) {
       final String msg = "Error while creating a new bundle: ";
+      LOGGER.error(msg, e);
+      throw new RuntimeException(msg, e);
+    }
+  }
+
+  private interface GetAnalysisCall {
+    //    @retrofit2.http.Headers("Content-Type: application/json")
+    @GET("analysis/{bundleId}")
+    Call<GetAnalysisResponse> doGetAnalysis(
+        @Header("Session-Token") String token,
+        @Path(value = "bundleId", encoded = true) String bundleId);
+  }
+
+  /**
+   * Starts a new bundle analysis or checks its current status and available results.
+   *
+   * @return {@link GetAnalysisResponse} or throw Exception if not succeed.
+   */
+  // todo: error handling
+  public static GetAnalysisResponse getAnalysis(String token, String bundleId) {
+    GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
+    try {
+      Response<GetAnalysisResponse> response =
+          getAnalysisCall.doGetAnalysis(token, bundleId).execute();
+      if (response.code() != 200)
+        throw new IOException("Returned status code = " + response.code());
+      return response.body();
+    } catch (IOException e) {
+      final String msg = "Error while getting analysis: ";
       LOGGER.error(msg, e);
       throw new RuntimeException(msg, e);
     }
