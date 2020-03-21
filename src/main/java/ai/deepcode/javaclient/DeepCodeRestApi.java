@@ -9,6 +9,7 @@ import ai.deepcode.javaclient.responses.EmptyResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 
+import org.jetbrains.annotations.NotNull;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -23,7 +24,7 @@ import java.io.IOException;
  */
 public final class DeepCodeRestApi {
 
-//  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
+  //  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
 
   private DeepCodeRestApi() {}
 
@@ -45,17 +46,28 @@ public final class DeepCodeRestApi {
   /**
    * Requests the creation of a new login session.
    *
-   * @return {@link LoginResponse} instance or null if not succeed
-   * @throws IOException see {@link Call#execute()}
+   * @return {@link LoginResponse} instance
    */
-  public static LoginResponse newLogin() throws IOException {
-    LoginCall loginCall = retrofit.create(LoginCall.class);
-    final Response<LoginResponse> retrofitResponse = loginCall.doNewLogin().execute();
-    LoginResponse loginResponse = retrofitResponse.body();
-    if (loginResponse != null) {
-      loginResponse.setStatusCode(retrofitResponse.code());
+  @NotNull
+  public static LoginResponse newLogin() {
+    final LoginCall loginCall = retrofit.create(LoginCall.class);
+    try {
+      final Response<LoginResponse> retrofitResponse = loginCall.doNewLogin().execute();
+      LoginResponse result = retrofitResponse.body();
+      if (result == null) return new LoginResponse();
+      result.setStatusCode(retrofitResponse.code());
+      switch (retrofitResponse.code()) {
+        case 200:
+          result.setStatusDescription("The new login request was successful");
+          break;
+        default:
+          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+          break;
+      }
+      return result;
+    } catch (IOException e) {
+      return new LoginResponse();
     }
-    return loginResponse;
   }
 
   private interface CheckSessionCall {
@@ -66,31 +78,33 @@ public final class DeepCodeRestApi {
   /**
    * Checks status of the login process.
    *
-   * @return {@link EmptyResponse} instance or null if not succeed
-   * @throws IOException see {@link Call#execute()}
+   * @return {@link EmptyResponse} instance
    */
-  public static EmptyResponse checkSession(String token) throws IOException {
+  @NotNull
+  public static EmptyResponse checkSession(String token) {
     CheckSessionCall checkSessionCall = retrofit.create(CheckSessionCall.class);
     final EmptyResponse result = new EmptyResponse();
-    final Response<Void> retrofitResponse = checkSessionCall.doCheckSession(token).execute();
+    final Response<Void> retrofitResponse;
+    try {
+      retrofitResponse = checkSessionCall.doCheckSession(token).execute();
+    } catch (IOException e) {
+      return result;
+    }
     result.setStatusCode(retrofitResponse.code());
-    /*    String text;
-        switch (status) {
-          case 200:
-            text = "The login process was successful";
-            break;
-          case 304:
-            text = "The login process has not been completed yet";
-            break;
-          case 401:
-            text = "Missing or invalid sessionToken";
-            break;
-          default:
-            text = "Unknown Status Code: " + status;
-            LOGGER.error(text);
-            break;
-        }
-    */
+    switch (retrofitResponse.code()) {
+      case 200:
+        result.setStatusDescription("The login process was successful");
+        break;
+      case 304:
+        result.setStatusDescription("The login process has not been completed yet");
+        break;
+      case 401:
+        result.setStatusDescription("Missing or invalid sessionToken");
+        break;
+      default:
+        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+        break;
+    }
     return result;
   }
 
@@ -104,21 +118,43 @@ public final class DeepCodeRestApi {
   /**
    * Creates a new bundle.
    *
-   * @return {@link CreateBundleResponse} instance or null if not succeed
-   * @throws IOException see {@link Call#execute()}
+   * @return {@link CreateBundleResponse} instance
    */
-  public static CreateBundleResponse createBundle(String token, FileContentRequest files)
-      throws IOException {
+  @NotNull
+  public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
-    Response<CreateBundleResponse> retrofitResponse =
-        createBundleCall.doCreateBundle(token, files).execute();
-    final CreateBundleResponse createBundleResponse = retrofitResponse.body();
-    if (createBundleResponse != null) {
-      createBundleResponse.setStatusCode(retrofitResponse.code());
-    } else {
-      return new CreateBundleResponse(retrofitResponse.code());
+    Response<CreateBundleResponse> retrofitResponse = null;
+    try {
+      retrofitResponse = createBundleCall.doCreateBundle(token, files).execute();
+    } catch (IOException e) {
+      return new CreateBundleResponse();
     }
-    return createBundleResponse;
+    CreateBundleResponse result = retrofitResponse.body();
+    if (result == null) {
+      result = new CreateBundleResponse();
+    }
+    result.setStatusCode(retrofitResponse.code());
+    switch (retrofitResponse.code()) {
+      case 200:
+        result.setStatusDescription("The bundle creation was successful");
+        break;
+      case 400:
+        result.setStatusDescription("Request content doesn't match the specifications");
+        break;
+      case 401:
+        result.setStatusDescription("Missing sessionToken or incomplete login process");
+        break;
+      case 403:
+        result.setStatusDescription("Unauthorized access to requested repository");
+        break;
+      case 404:
+        result.setStatusDescription("Unable to resolve requested oid");
+        break;
+      default:
+        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+        break;
+    }
+    return result;
   }
 
   private interface GetAnalysisCall {
@@ -132,17 +168,34 @@ public final class DeepCodeRestApi {
   /**
    * Starts a new bundle analysis or checks its current status and available results.
    *
-   * @return {@link GetAnalysisResponse} instance or null if not succeed
-   * @throws IOException see {@link Call#execute()}
+   * @return {@link GetAnalysisResponse} instance}
    */
-  public static GetAnalysisResponse getAnalysis(String token, String bundleId) throws IOException {
+  @NotNull
+  public static GetAnalysisResponse getAnalysis(String token, String bundleId) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
-    Response<GetAnalysisResponse> retrofitResponse =
-        getAnalysisCall.doGetAnalysis(token, bundleId).execute();
-    final GetAnalysisResponse getAnalysisResponse = retrofitResponse.body();
-    if (getAnalysisResponse != null) {
-      getAnalysisResponse.setStatusCode(retrofitResponse.code());
+    try {
+      Response<GetAnalysisResponse> retrofitResponse =
+          getAnalysisCall.doGetAnalysis(token, bundleId).execute();
+      GetAnalysisResponse result = retrofitResponse.body();
+      if (result == null) result = new GetAnalysisResponse();
+      result.setStatusCode(retrofitResponse.code());
+      switch (retrofitResponse.code()) {
+        case 200:
+          result.setStatusDescription("The analysis request was successful");
+          break;
+        case 401:
+          result.setStatusDescription("Missing sessionToken or incomplete login process");
+          break;
+        case 403:
+          result.setStatusDescription("Unauthorized access to requested repository");
+          break;
+        default:
+          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+          break;
+      }
+      return result;
+    } catch (IOException e) {
+      return new GetAnalysisResponse();
     }
-    return getAnalysisResponse;
   }
 }

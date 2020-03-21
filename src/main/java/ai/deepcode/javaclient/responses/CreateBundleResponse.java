@@ -8,11 +8,11 @@ public class CreateBundleResponse extends EmptyResponse {
   private final List<String> missingFiles;
   private final String uploadURL;
 
-  public CreateBundleResponse(int statusCode) {
+  public CreateBundleResponse() {
+    super();
     this.bundleId = "";
     this.missingFiles = Collections.emptyList();
     this.uploadURL = "";
-    setStatusCode(statusCode);
   }
 
   public CreateBundleResponse(String bundleId, List<String> missingFiles, String uploadURL) {

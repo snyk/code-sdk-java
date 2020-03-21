@@ -7,6 +7,14 @@ public class GetAnalysisResponse extends EmptyResponse {
   private final AnalysisResults analysisResults;
 //  private final JsonElement analysisResults;
 
+  public GetAnalysisResponse(){
+    super();
+    status = "";
+    progress = 0;
+    analysisURL = "";
+    analysisResults = null;
+  }
+
   public GetAnalysisResponse(
       String status, int progress, String analysisURL, AnalysisResults analysisResults) {
     this.status = status;

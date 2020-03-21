@@ -26,6 +26,7 @@ dependencies {
 //    implementation 'com.google.guava:guava:28.1-jre'
     implementation 'com.squareup.retrofit2:retrofit:2.7.1'
     implementation 'com.squareup.retrofit2:converter-gson:2.7.1'
+    implementation 'org.jetbrains:annotations:15.0'
     // should be provided by IntelliJ platform
     //compileOnly 'org.slf4j:slf4j-api:1.7.25'
 
