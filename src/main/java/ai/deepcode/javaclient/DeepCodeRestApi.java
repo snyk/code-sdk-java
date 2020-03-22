@@ -4,10 +4,7 @@
 package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContentRequest;
-import ai.deepcode.javaclient.responses.CreateBundleResponse;
-import ai.deepcode.javaclient.responses.EmptyResponse;
-import ai.deepcode.javaclient.responses.GetAnalysisResponse;
-import ai.deepcode.javaclient.responses.LoginResponse;
+import ai.deepcode.javaclient.responses.*;
 
 import org.jetbrains.annotations.NotNull;
 import retrofit2.Call;
@@ -196,6 +193,42 @@ public final class DeepCodeRestApi {
       return result;
     } catch (IOException e) {
       return new GetAnalysisResponse();
+    }
+  }
+
+  private interface GetFiltersCall {
+    @GET("filters")
+    Call<GetFiltersResponse> doGetFilters(@Header("Session-Token") String token);
+  }
+
+  /**
+   * Requests current filtering options for uploaded bundles.
+   *
+   * @return {@link GetFiltersResponse} instance}
+   */
+  @NotNull
+  public static GetFiltersResponse getFilters(String token) {
+    GetFiltersCall getFiltersCall = retrofit.create(GetFiltersCall.class);
+    try {
+      Response<GetFiltersResponse> retrofitResponse =
+              getFiltersCall.doGetFilters(token).execute();
+      GetFiltersResponse result = retrofitResponse.body();
+      if (result == null) result = new GetFiltersResponse();
+      result.setStatusCode(retrofitResponse.code());
+      switch (retrofitResponse.code()) {
+        case 200:
+          result.setStatusDescription("The filters request was successful");
+          break;
+        case 401:
+          result.setStatusDescription("Missing sessionToken or incomplete login process");
+          break;
+        default:
+          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+          break;
+      }
+      return result;
+    } catch (IOException e) {
+      return new GetFiltersResponse();
     }
   }
 }

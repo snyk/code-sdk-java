@@ -7,6 +7,7 @@ import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
+import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import ai.deepcode.javaclient.responses.LoginResponse;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -118,8 +119,7 @@ public class DeepCodeRestApiTest {
         "Create Bundle call with incomplete login token is not accepted by server with Status code [%2$d].\n",
         brokenToken, response.getStatusCode());
 
-    response =
-        DeepCodeRestApi.createBundle(token, new FileContentRequest(Collections.emptyList()));
+    response = DeepCodeRestApi.createBundle(token, new FileContentRequest(Collections.emptyList()));
     assertNotNull(response);
     assertEquals(
         "Create Bundle call with malformed (empty) files array should not be accepted by server",
@@ -147,5 +147,27 @@ public class DeepCodeRestApiTest {
             + response);
     //    assertEquals("DONE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
+  }
+
+  @Test
+  public void _050_getFilters() {
+    System.out.println("\n--------------Get Filters----------------\n");
+    String token = loggedToken;
+    GetFiltersResponse response = DeepCodeRestApi.getFilters(token);
+    assertNotNull(response);
+    final String errorMsg =
+        "Get Filters return status code: ["
+            + response.getStatusCode()
+            + "] "
+            + response.getStatusDescription()
+            + "\n";
+    assertEquals(errorMsg, response.getStatusCode(), 200);
+
+    System.out.println(
+        "Get Filters call returns next filters:"
+            + "\nextensions: "
+            + response.getExtensions()
+            + "\nconfigFiles: "
+            + response.getConfigFiles());
   }
 }
