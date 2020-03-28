@@ -3,7 +3,9 @@
  */
 package ai.deepcode.javaclient;
 
+import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.*;
 
 import org.jetbrains.annotations.NotNull;
@@ -110,19 +112,24 @@ public final class DeepCodeRestApi {
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
         @Header("Session-Token") String token, @Body FileContentRequest files);
+
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @POST("bundle")
+    Call<CreateBundleResponse> doCreateBundle(
+        @Header("Session-Token") String token, @Body FileHashRequest files);
   }
 
-  /**
-   * Creates a new bundle.
-   *
-   * @return {@link CreateBundleResponse} instance
-   */
-  @NotNull
-  public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
+  private static <Req> CreateBundleResponse doCreateBundle(String token, Req request) {
     CreateBundleCall createBundleCall = retrofit.create(CreateBundleCall.class);
-    Response<CreateBundleResponse> retrofitResponse = null;
+    Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse = createBundleCall.doCreateBundle(token, files).execute();
+      if (request instanceof FileContentRequest)
+        retrofitResponse =
+            createBundleCall.doCreateBundle(token, (FileContentRequest) request).execute();
+      else if (request instanceof FileHashRequest)
+        retrofitResponse =
+            createBundleCall.doCreateBundle(token, (FileHashRequest) request).execute();
+      else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
@@ -152,6 +159,26 @@ public final class DeepCodeRestApi {
         break;
     }
     return result;
+  }
+
+  /**
+   * Creates a new bundle with direct file(s) source at {@link FileContent}.
+   *
+   * @return {@link CreateBundleResponse} instance
+   */
+  @NotNull
+  public static CreateBundleResponse createBundle(String token, FileContentRequest files) {
+    return doCreateBundle(token, files);
+  }
+
+  /**
+   * Creates a new bundle for file(s) with Hash.
+   *
+   * @return {@link CreateBundleResponse} instance
+   */
+  @NotNull
+  public static CreateBundleResponse createBundle(String token, FileHashRequest files) {
+    return doCreateBundle(token, files);
   }
 
   private interface GetAnalysisCall {
@@ -210,8 +237,7 @@ public final class DeepCodeRestApi {
   public static GetFiltersResponse getFilters(String token) {
     GetFiltersCall getFiltersCall = retrofit.create(GetFiltersCall.class);
     try {
-      Response<GetFiltersResponse> retrofitResponse =
-              getFiltersCall.doGetFilters(token).execute();
+      Response<GetFiltersResponse> retrofitResponse = getFiltersCall.doGetFilters(token).execute();
       GetFiltersResponse result = retrofitResponse.body();
       if (result == null) result = new GetFiltersResponse();
       result.setStatusCode(retrofitResponse.code());

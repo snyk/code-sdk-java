@@ -5,6 +5,7 @@ package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.GetFiltersResponse;
@@ -13,7 +14,13 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -84,19 +91,26 @@ public class DeepCodeRestApiTest {
   }
 
   @Test
-  public void _030_createBundle() {
-    System.out.println("\n--------------Create Bundle----------------\n");
-    String token = loggedToken;
-    int status = DeepCodeRestApi.checkSession(token).getStatusCode();
+  public void _030_createBundle_from_source() {
+    System.out.println("\n--------------Create Bundle from Source----------------\n");
+    int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     FileContent fileContent = new FileContent("/test.js", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
-    CreateBundleResponse response = DeepCodeRestApi.createBundle(token, files);
+    CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
     System.out.printf(
-        "Create Bundle call return:\nStatus code [%1$d] \nBundleId: [%2$s]\n",
-        response.getStatusCode(), response.getBundleId());
+        "Create Bundle call return:\nStatus code [%1$d] %3$s \nBundleId: [%2$s]\n",
+        response.getStatusCode(), response.getBundleId(), response.getStatusDescription());
+    assertEquals(200, response.getStatusCode());
+  }
 
+  @Test
+  public void _031_createBundle_wrong_request() {
+    System.out.println("\n--------------Create Bundle with wrong requests----------------\n");
+    FileContent fileContent = new FileContent("/test.js", testFileContent);
+    FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
+    CreateBundleResponse response;
     final String brokenToken = "fff";
     response = DeepCodeRestApi.createBundle(brokenToken, files);
     assertNotNull(response);
@@ -119,7 +133,8 @@ public class DeepCodeRestApiTest {
         "Create Bundle call with incomplete login token is not accepted by server with Status code [%2$d].\n",
         brokenToken, response.getStatusCode());
 
-    response = DeepCodeRestApi.createBundle(token, new FileContentRequest(Collections.emptyList()));
+    response =
+        DeepCodeRestApi.createBundle(loggedToken, new FileContentRequest(Collections.emptyList()));
     assertNotNull(response);
     assertEquals(
         "Create Bundle call with malformed (empty) files array should not be accepted by server",
@@ -128,6 +143,51 @@ public class DeepCodeRestApiTest {
     System.out.printf(
         "Create Bundle call with malformed (empty) files array is not accepted by server with Status code [%1$d].\n",
         response.getStatusCode());
+  }
+
+  @Test
+  public void _035_createBundle_with_hash() {
+    System.out.println("\n--------------Create Bundle with Hash----------------\n");
+    int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
+    assertEquals(200, status);
+
+    MessageDigest digest;
+    File file = new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final String absolutePath = file.getAbsolutePath();
+    System.out.println("File Path: " + absolutePath);
+
+    String fileText;
+    try {
+      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
+      digest = MessageDigest.getInstance("SHA-256");
+    } catch (IOException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+    byte[] encodedhash = digest.digest(fileText.getBytes(StandardCharsets.UTF_8));
+    String hash = bytesToHex(encodedhash);
+    System.out.println("File hash: " + hash);
+
+    FileHashRequest files = new FileHashRequest(Collections.singletonMap("/" + absolutePath, hash));
+    CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
+    assertNotNull(response);
+    System.out.printf(
+        "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        response.getStatusCode(),
+        response.getBundleId(),
+        response.getStatusDescription(),
+        response.getMissingFiles(),
+        response.getUploadURL());
+    assertEquals(200, response.getStatusCode());
+  }
+
+  private static String bytesToHex(byte[] hash) {
+    StringBuilder hexString = new StringBuilder();
+    for (byte b : hash) {
+      String hex = Integer.toHexString(0xff & b);
+      if (hex.length() == 1) hexString.append('0');
+      hexString.append(hex);
+    }
+    return hexString.toString();
   }
 
   @Test
