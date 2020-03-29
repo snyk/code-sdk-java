@@ -5,6 +5,7 @@ package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
 import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.*;
 
@@ -16,6 +17,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.*;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * https://deepcode.freshdesk.com/support/solutions/articles/60000346777-sessions
@@ -179,6 +181,58 @@ public final class DeepCodeRestApi {
   @NotNull
   public static CreateBundleResponse createBundle(String token, FileHashRequest files) {
     return doCreateBundle(token, files);
+  }
+
+  private interface UploadFilesCall {
+    @retrofit2.http.Headers("Content-Type: application/json;charset=utf-8")
+    @POST("file/{bundleId}")
+    Call<Void> doUploadFiles(
+        @Header("Session-Token") String token,
+        @Path(value = "bundleId", encoded = true) String bundleId,
+        @Body List<FileHash2ContentRequest> listHash2Content);
+  }
+
+  /**
+   * Uploads missing files to a bundle.
+   *
+   * @param token
+   * @param bundleId
+   * @param request List<FileHash2ContentRequest>
+   * @return EmptyResponse with return code and description.
+   */
+  public static EmptyResponse UploadFiles(
+      String token, String bundleId, List<FileHash2ContentRequest> request) {
+    UploadFilesCall uploadFilesCall = retrofit.create(UploadFilesCall.class);
+    Response<Void> retrofitResponse;
+    try {
+      retrofitResponse = uploadFilesCall.doUploadFiles(token, bundleId, request).execute();
+    } catch (IOException e) {
+      return new EmptyResponse();
+    }
+    EmptyResponse result = new EmptyResponse();
+    result.setStatusCode(retrofitResponse.code());
+    switch (retrofitResponse.code()) {
+      case 200:
+        result.setStatusDescription("Upload succeeded");
+        break;
+      case 400:
+        result.setStatusDescription(
+            "Content and hash mismatch or attempted to upload files to a git bundle");
+        break;
+      case 401:
+        result.setStatusDescription("Missing sessionToken or incomplete login process");
+        break;
+      case 403:
+        result.setStatusDescription("Unauthorized access to requested bundle");
+        break;
+      case 413:
+        result.setStatusDescription("Payload too large");
+        break;
+      default:
+        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+        break;
+    }
+    return result;
   }
 
   private interface GetAnalysisCall {

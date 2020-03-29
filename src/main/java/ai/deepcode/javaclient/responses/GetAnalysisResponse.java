@@ -2,7 +2,7 @@ package ai.deepcode.javaclient.responses;
 
 public class GetAnalysisResponse extends EmptyResponse {
   private final String status;
-  private final int progress;
+  private final double progress;
   private final String analysisURL;
   private final AnalysisResults analysisResults;
 //  private final JsonElement analysisResults;
@@ -16,7 +16,7 @@ public class GetAnalysisResponse extends EmptyResponse {
   }
 
   public GetAnalysisResponse(
-      String status, int progress, String analysisURL, AnalysisResults analysisResults) {
+      String status, double progress, String analysisURL, AnalysisResults analysisResults) {
     this.status = status;
     this.progress = progress;
     this.analysisURL = analysisURL;
@@ -27,7 +27,7 @@ public class GetAnalysisResponse extends EmptyResponse {
     return status;
   }
 
-  public int getProgress() {
+  public double getProgress() {
     return progress;
   }
 

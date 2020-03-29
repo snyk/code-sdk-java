@@ -5,23 +5,22 @@ package ai.deepcode.javaclient;
 
 import ai.deepcode.javaclient.requests.FileContent;
 import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
 import ai.deepcode.javaclient.requests.FileHashRequest;
-import ai.deepcode.javaclient.responses.CreateBundleResponse;
-import ai.deepcode.javaclient.responses.GetAnalysisResponse;
-import ai.deepcode.javaclient.responses.GetFiltersResponse;
-import ai.deepcode.javaclient.responses.LoginResponse;
+import ai.deepcode.javaclient.responses.*;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -36,7 +35,7 @@ public class DeepCodeRestApiTest {
           + "}(AJS.$));";
 
   // !!! Will works only with already logged sessionToken
-  private final String loggedToken =
+  private static final String loggedToken =
       "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
   private final String secondLoggedToken =
       "c6ea36d5f67534826d9cd875ae3d7f2257ac59f74230d4c8bae4490c5cd66fe4";
@@ -88,6 +87,28 @@ public class DeepCodeRestApiTest {
         "Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(
         "Check Session call with logged user's token should return 200 code.", 200, status);
+  }
+
+  @Test
+  public void _025_getFilters() {
+    System.out.println("\n--------------Get Filters----------------\n");
+    String token = loggedToken;
+    GetFiltersResponse response = DeepCodeRestApi.getFilters(token);
+    assertNotNull(response);
+    final String errorMsg =
+        "Get Filters return status code: ["
+            + response.getStatusCode()
+            + "] "
+            + response.getStatusDescription()
+            + "\n";
+    assertEquals(errorMsg, response.getStatusCode(), 200);
+
+    System.out.println(
+        "Get Filters call returns next filters:"
+            + "\nextensions: "
+            + response.getExtensions()
+            + "\nconfigFiles: "
+            + response.getConfigFiles());
   }
 
   @Test
@@ -148,26 +169,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _035_createBundle_with_hash() {
     System.out.println("\n--------------Create Bundle with Hash----------------\n");
-    int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
-    assertEquals(200, status);
-
-    MessageDigest digest;
-    File file = new File(getClass().getClassLoader().getResource("test1.js").getFile());
-    final String absolutePath = file.getAbsolutePath();
-    System.out.println("File Path: " + absolutePath);
-
-    String fileText;
-    try {
-      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
-      digest = MessageDigest.getInstance("SHA-256");
-    } catch (IOException | NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
-    byte[] encodedhash = digest.digest(fileText.getBytes(StandardCharsets.UTF_8));
-    String hash = bytesToHex(encodedhash);
-    System.out.println("File hash: " + hash);
-
-    FileHashRequest files = new FileHashRequest(Collections.singletonMap("/" + absolutePath, hash));
+    FileHashRequest files = createFileHashRequest();
     CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
     System.out.printf(
@@ -190,8 +192,85 @@ public class DeepCodeRestApiTest {
     return hexString.toString();
   }
 
+  private FileHashRequest createFileHashRequest() {
+    int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
+    assertEquals(200, status);
+    final File testFile =
+            new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    MessageDigest digest;
+    final String absolutePath = testFile.getAbsolutePath();
+    System.out.println("File: " + absolutePath);
+
+    // Append with System.currentTimeMillis() to make new Hash.
+    try {
+      Writer output;
+      output = new BufferedWriter(new FileWriter(absolutePath, true));
+      output.append(String.valueOf(System.currentTimeMillis()));
+      output.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    String fileText;
+    try {
+      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
+      digest = MessageDigest.getInstance("SHA-256");
+    } catch (IOException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
+    }
+    System.out.println(fileText);
+    System.out.println("-----------------");
+
+    byte[] encodedhash = digest.digest(fileText.getBytes(StandardCharsets.UTF_8));
+    String hash = bytesToHex(encodedhash);
+    System.out.println("File hash: " + hash);
+
+    return new FileHashRequest(Collections.singletonMap("/" + absolutePath, hash));
+  }
+
   @Test
-  public void _040_getAnalysis() {
+  public void _040_UploadFiles() {
+    System.out.println("\n--------------Upload Files by Hash----------------\n");
+    FileHashRequest fileHashRequest = createFileHashRequest();
+    CreateBundleResponse createBundleResponse =
+        DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
+    assertNotNull(createBundleResponse);
+    System.out.printf(
+            "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+            createBundleResponse.getStatusCode(),
+            createBundleResponse.getBundleId(),
+            createBundleResponse.getStatusDescription(),
+            createBundleResponse.getMissingFiles(),
+            createBundleResponse.getUploadURL());
+    assertEquals(200, createBundleResponse.getStatusCode());
+    assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
+
+    final File testFile =
+            new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final String absolutePath = testFile.getAbsolutePath();
+    String fileText;
+    try {
+      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    final String filePath = createBundleResponse.getMissingFiles().get(0);
+    final String fileHash = fileHashRequest.getFiles().get(filePath);
+    final List<FileHash2ContentRequest> requestBody =
+        Collections.singletonList(new FileHash2ContentRequest(fileHash, fileText));
+    EmptyResponse response =
+        DeepCodeRestApi.UploadFiles(loggedToken, createBundleResponse.getBundleId(), requestBody);
+
+    assertNotNull(response);
+    System.out.printf(
+        "Upload Files call return: Status code [%1$d] %2$s\n",
+        response.getStatusCode(), response.getStatusDescription());
+    assertEquals(200, response.getStatusCode());
+  }
+
+  @Test
+  public void _090_getAnalysis() {
     System.out.println("\n--------------Get Analysis----------------\n");
     String token = loggedToken;
     String bundleId =
@@ -207,27 +286,5 @@ public class DeepCodeRestApiTest {
             + response);
     //    assertEquals("DONE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
-  }
-
-  @Test
-  public void _050_getFilters() {
-    System.out.println("\n--------------Get Filters----------------\n");
-    String token = loggedToken;
-    GetFiltersResponse response = DeepCodeRestApi.getFilters(token);
-    assertNotNull(response);
-    final String errorMsg =
-        "Get Filters return status code: ["
-            + response.getStatusCode()
-            + "] "
-            + response.getStatusDescription()
-            + "\n";
-    assertEquals(errorMsg, response.getStatusCode(), 200);
-
-    System.out.println(
-        "Get Filters call returns next filters:"
-            + "\nextensions: "
-            + response.getExtensions()
-            + "\nconfigFiles: "
-            + response.getConfigFiles());
   }
 }
