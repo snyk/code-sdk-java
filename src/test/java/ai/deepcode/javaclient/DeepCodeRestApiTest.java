@@ -90,6 +90,33 @@ public class DeepCodeRestApiTest {
   }
 
   @Test
+  public void _022_setBaseUrl() {
+    System.out.println("\n--------------Set base URL----------------\n");
+    try {
+      doSetBaseUrlTest("", 401);
+      doSetBaseUrlTest("https://www.google.com/", 404);
+      doSetBaseUrlTest("https://www.deepcoded.com/", 401);
+    } finally {
+      DeepCodeRestApi.setBaseUrl("");
+    }
+  }
+
+  private void doSetBaseUrlTest(String baseUrl, int expectedStatusCode) {
+    String token = "blablabla";
+    EmptyResponse response;
+    int status;
+    String description;
+    DeepCodeRestApi.setBaseUrl(baseUrl);
+    response = DeepCodeRestApi.checkSession(token);
+    status = response.getStatusCode();
+    description = response.getStatusDescription();
+    System.out.printf(
+            "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
+            token, status, baseUrl, description);
+    assertEquals(expectedStatusCode, status);
+  }
+
+  @Test
   public void _025_getFilters() {
     System.out.println("\n--------------Get Filters----------------\n");
     String token = loggedToken;
@@ -195,8 +222,7 @@ public class DeepCodeRestApiTest {
   private FileHashRequest createFileHashRequest() {
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
-    final File testFile =
-            new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
     MessageDigest digest;
     final String absolutePath = testFile.getAbsolutePath();
     System.out.println("File: " + absolutePath);
@@ -236,17 +262,16 @@ public class DeepCodeRestApiTest {
         DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
     assertNotNull(createBundleResponse);
     System.out.printf(
-            "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
-            createBundleResponse.getStatusCode(),
-            createBundleResponse.getBundleId(),
-            createBundleResponse.getStatusDescription(),
-            createBundleResponse.getMissingFiles(),
-            createBundleResponse.getUploadURL());
+        "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        createBundleResponse.getStatusCode(),
+        createBundleResponse.getBundleId(),
+        createBundleResponse.getStatusDescription(),
+        createBundleResponse.getMissingFiles(),
+        createBundleResponse.getUploadURL());
     assertEquals(200, createBundleResponse.getStatusCode());
     assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
 
-    final File testFile =
-            new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {

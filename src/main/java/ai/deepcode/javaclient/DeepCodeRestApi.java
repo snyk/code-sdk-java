@@ -10,6 +10,7 @@ import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.*;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -29,14 +30,27 @@ public final class DeepCodeRestApi {
 
   private DeepCodeRestApi() {}
 
-  private static String API_URL = "https://www.deepcode.ai/publicapi/";
+  private static String API_URL = "https://www.deepcode.ai/";
 
-  // Create simple REST adapter which points the API_URL.
-  private static final Retrofit retrofit =
-      new Retrofit.Builder()
-          .baseUrl(API_URL)
-          .addConverterFactory(GsonConverterFactory.create())
-          .build();
+  private static Retrofit retrofit = buildRetrofit(API_URL);
+
+  // Create simple REST adapter which points the baseUrl.
+  private static Retrofit buildRetrofit(String baseUrl) {
+    return new Retrofit.Builder()
+        .baseUrl(baseUrl + "publicapi/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build();
+  }
+
+  /**
+   * Re-set baseUrl for retrofit instance
+   *
+   * @param baseUrl new baseUrl. <b>Null</b> or empty "" value will reset to default {@code
+   *     #API_URL}
+   */
+  public static void setBaseUrl(@Nullable String baseUrl) {
+    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl);
+  }
 
   private interface LoginCall {
     @retrofit2.http.Headers("Content-Type: application/json")
