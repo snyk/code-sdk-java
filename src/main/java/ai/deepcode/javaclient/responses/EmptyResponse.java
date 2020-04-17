@@ -5,7 +5,7 @@ public class EmptyResponse {
   private String statusDescription = "";
 
   public EmptyResponse(){
-    this.statusDescription = "Error connecting to the server. Check your network connection and try again later.";
+    this.statusDescription = "Error connecting to the server. Check your Settings, Network connection and/or try again later.";
   }
 
   public void setStatusCode(int statusCode) {

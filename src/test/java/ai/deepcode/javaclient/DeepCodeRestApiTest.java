@@ -40,6 +40,10 @@ public class DeepCodeRestApiTest {
   private final String secondLoggedToken =
       "c6ea36d5f67534826d9cd875ae3d7f2257ac59f74230d4c8bae4490c5cd66fe4";
 
+  // !!! Will works only for bundleId with already loaded file!!!
+  private static final String bundleId =
+          "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
+
   @Test
   public void _010_newLogin() {
     System.out.println("\n--------------New Login----------------\n");
@@ -111,8 +115,8 @@ public class DeepCodeRestApiTest {
     status = response.getStatusCode();
     description = response.getStatusDescription();
     System.out.printf(
-            "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
-            token, status, baseUrl, description);
+        "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
+        token, status, baseUrl, description);
     assertEquals(expectedStatusCode, status);
   }
 
@@ -297,10 +301,14 @@ public class DeepCodeRestApiTest {
   @Test
   public void _090_getAnalysis() {
     System.out.println("\n--------------Get Analysis----------------\n");
-    String token = loggedToken;
-    String bundleId =
-        "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
-    GetAnalysisResponse response = DeepCodeRestApi.getAnalysis(token, bundleId);
+    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false));
+    System.out.println("\n---- With `Linters` param:\n");
+    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true));
+    System.out.println("\n---- With `severity=2` param:\n");
+    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false));
+  }
+
+  private void assertAndPrintGetAnalysisResponse(GetAnalysisResponse response) {
     assertNotNull(response);
     System.out.println(
         "Get Analysis call for test file: \n"

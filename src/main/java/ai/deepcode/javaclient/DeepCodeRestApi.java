@@ -254,7 +254,9 @@ public final class DeepCodeRestApi {
     @GET("analysis/{bundleId}")
     Call<GetAnalysisResponse> doGetAnalysis(
         @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId);
+        @Path(value = "bundleId", encoded = true) String bundleId,
+        @Query("severity") Integer severity,
+        @QueryName String linters);
   }
 
   /**
@@ -263,11 +265,14 @@ public final class DeepCodeRestApi {
    * @return {@link GetAnalysisResponse} instance}
    */
   @NotNull
-  public static GetAnalysisResponse getAnalysis(String token, String bundleId) {
+  public static GetAnalysisResponse getAnalysis(
+      String token, String bundleId, Integer severity, boolean useLinters) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
-          getAnalysisCall.doGetAnalysis(token, bundleId).execute();
+          getAnalysisCall
+              .doGetAnalysis(token, bundleId, severity, (useLinters) ? "linters" : null)
+              .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();
       result.setStatusCode(retrofitResponse.code());
