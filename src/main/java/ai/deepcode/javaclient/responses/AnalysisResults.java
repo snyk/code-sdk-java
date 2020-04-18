@@ -2,16 +2,16 @@ package ai.deepcode.javaclient.responses;
 
 public class AnalysisResults {
 
-  private Files files;
+  private FilesMap files;
   private Suggestions suggestions;
 
-  public AnalysisResults(Files files, Suggestions suggestions) {
+  public AnalysisResults(FilesMap files, Suggestions suggestions) {
     super();
     this.files = files;
     this.suggestions = suggestions;
   }
 
-  public Files getFiles() {
+  public FilesMap getFiles() {
     return files;
   }
 

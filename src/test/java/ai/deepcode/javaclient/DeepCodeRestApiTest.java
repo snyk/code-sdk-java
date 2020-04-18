@@ -16,6 +16,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -39,6 +40,8 @@ public class DeepCodeRestApiTest {
       "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
   private final String secondLoggedToken =
       "c6ea36d5f67534826d9cd875ae3d7f2257ac59f74230d4c8bae4490c5cd66fe4";
+  private final String deepcodedLoggedToken =
+      "4df67e37cea75a4314399c6fb0e83c680f457448d13a45225e2beb3c24f0856c";
 
   // !!! Will works only for bundleId with already loaded file!!!
   private static final String bundleId =
@@ -97,23 +100,20 @@ public class DeepCodeRestApiTest {
   public void _022_setBaseUrl() {
     System.out.println("\n--------------Set base URL----------------\n");
     try {
-      doSetBaseUrlTest("", 401);
-      doSetBaseUrlTest("https://www.google.com/", 404);
-      doSetBaseUrlTest("https://www.deepcoded.com/", 401);
+      doSetBaseUrlTest("", "blabla", 401);
+      doSetBaseUrlTest("https://www.google.com/", "blabla", 404);
+      doSetBaseUrlTest("https://www.deepcoded.com/", "blabla", 401);
+      doSetBaseUrlTest("https://www.deepcoded.com/", deepcodedLoggedToken, 200);
     } finally {
       DeepCodeRestApi.setBaseUrl("");
     }
   }
 
-  private void doSetBaseUrlTest(String baseUrl, int expectedStatusCode) {
-    String token = "blablabla";
-    EmptyResponse response;
-    int status;
-    String description;
+  private void doSetBaseUrlTest(String baseUrl, String token, int expectedStatusCode) {
     DeepCodeRestApi.setBaseUrl(baseUrl);
-    response = DeepCodeRestApi.checkSession(token);
-    status = response.getStatusCode();
-    description = response.getStatusDescription();
+    EmptyResponse response = DeepCodeRestApi.checkSession(token);
+    int status = response.getStatusCode();
+    String description = response.getStatusDescription();
     System.out.printf(
         "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
         token, status, baseUrl, description);
@@ -243,7 +243,7 @@ public class DeepCodeRestApiTest {
 
     String fileText;
     try {
-      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
+      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
       digest = MessageDigest.getInstance("SHA-256");
     } catch (IOException | NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
@@ -279,7 +279,7 @@ public class DeepCodeRestApiTest {
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
-      fileText = new String(Files.readAllBytes(Path.of(absolutePath)), StandardCharsets.UTF_8);
+      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
