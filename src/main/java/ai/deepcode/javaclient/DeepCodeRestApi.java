@@ -3,10 +3,7 @@
  */
 package ai.deepcode.javaclient;
 
-import ai.deepcode.javaclient.requests.FileContent;
-import ai.deepcode.javaclient.requests.FileContentRequest;
-import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
-import ai.deepcode.javaclient.requests.FileHashRequest;
+import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.*;
 
 import org.jetbrains.annotations.NotNull;
@@ -195,6 +192,63 @@ public final class DeepCodeRestApi {
   @NotNull
   public static CreateBundleResponse createBundle(String token, FileHashRequest files) {
     return doCreateBundle(token, files);
+  }
+
+  private interface ExtendBundleCall {
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @PUT("bundle/{bundleId}")
+    Call<CreateBundleResponse> doExtendBundle(
+            @Header("Session-Token") String token,
+            @Path(value = "bundleId", encoded = true) String bundleId,
+            @Body ExtendBundleRequest extendBundleRequest);
+  }
+
+  /**
+   * Creates a new bundle by extending a previously uploaded one.
+   *
+   * @param bundleId the parent bundle to extend
+   * @return {@link CreateBundleResponse} instance
+   */
+  @NotNull
+  public static CreateBundleResponse extendBundle(
+      String token, String bundleId, ExtendBundleRequest extendBundleRequest) {
+    ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
+    Response<CreateBundleResponse> retrofitResponse;
+    try {
+      retrofitResponse =
+          extendBundleCall.doExtendBundle(token, bundleId, extendBundleRequest).execute();
+    } catch (IOException e) {
+      return new CreateBundleResponse();
+    }
+    CreateBundleResponse result = retrofitResponse.body();
+    if (result == null) {
+      result = new CreateBundleResponse();
+    }
+    result.setStatusCode(retrofitResponse.code());
+    switch (retrofitResponse.code()) {
+      case 200:
+        result.setStatusDescription("The bundle extension was successful");
+        break;
+      case 400:
+        result.setStatusDescription("Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
+        break;
+      case 401:
+        result.setStatusDescription("Missing sessionToken or incomplete login process");
+        break;
+      case 403:
+        result.setStatusDescription("Unauthorized access to parent bundle");
+        break;
+      case 404:
+        result.setStatusDescription("Parent bundle has expired");
+        break;
+      case 413:
+        result.setStatusDescription("Payload too large");
+        break;
+      default:
+        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+        break;
+    }
+    return result;
   }
 
   private interface UploadFilesCall {

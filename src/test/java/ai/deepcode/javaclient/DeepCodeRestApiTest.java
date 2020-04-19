@@ -3,10 +3,7 @@
  */
 package ai.deepcode.javaclient;
 
-import ai.deepcode.javaclient.requests.FileContent;
-import ai.deepcode.javaclient.requests.FileContentRequest;
-import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
-import ai.deepcode.javaclient.requests.FileHashRequest;
+import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.*;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -15,11 +12,9 @@ import org.junit.runners.MethodSorters;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,7 +40,7 @@ public class DeepCodeRestApiTest {
 
   // !!! Will works only for bundleId with already loaded file!!!
   private static final String bundleId =
-          "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
+      "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
 
   @Test
   public void _010_newLogin() {
@@ -200,7 +195,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _035_createBundle_with_hash() {
     System.out.println("\n--------------Create Bundle with Hash----------------\n");
-    FileHashRequest files = createFileHashRequest();
+    FileHashRequest files = createFileHashRequest(null);
     CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
     System.out.printf(
@@ -213,23 +208,19 @@ public class DeepCodeRestApiTest {
     assertEquals(200, response.getStatusCode());
   }
 
-  private static String bytesToHex(byte[] hash) {
-    StringBuilder hexString = new StringBuilder();
-    for (byte b : hash) {
-      String hex = Integer.toHexString(0xff & b);
-      if (hex.length() == 1) hexString.append('0');
-      hexString.append(hex);
-    }
-    return hexString.toString();
-  }
-
-  private FileHashRequest createFileHashRequest() {
+  private FileHashRequest createFileHashRequest(String fakeFileName) {
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
     MessageDigest digest;
-    final String absolutePath = testFile.getAbsolutePath();
-    System.out.println("File: " + absolutePath);
+    String absolutePath = testFile.getAbsolutePath();
+    String deepCodedPath =
+        "/"
+            + ((fakeFileName == null)
+                ? absolutePath
+                : absolutePath.replace("test1.js", fakeFileName));
+    System.out.println("\nFile: " + deepCodedPath);
+    System.out.println("-----------------");
 
     // Append with System.currentTimeMillis() to make new Hash.
     try {
@@ -255,13 +246,58 @@ public class DeepCodeRestApiTest {
     String hash = bytesToHex(encodedhash);
     System.out.println("File hash: " + hash);
 
-    return new FileHashRequest(Collections.singletonMap("/" + absolutePath, hash));
+    return new FileHashRequest(Collections.singletonMap(deepCodedPath, hash));
+  }
+
+  private static String bytesToHex(byte[] hash) {
+    StringBuilder hexString = new StringBuilder();
+    for (byte b : hash) {
+      String hex = Integer.toHexString(0xff & b);
+      if (hex.length() == 1) hexString.append('0');
+      hexString.append(hex);
+    }
+    return hexString.toString();
+  }
+
+  @Test
+  public void _037_ExtendBundle() {
+    System.out.println("\n--------------Extend Bundle----------------\n");
+    FileHashRequest fileHashRequest = createFileHashRequest(null);
+    CreateBundleResponse createBundleResponse =
+        DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
+    assertNotNull(createBundleResponse);
+    System.out.printf(
+        "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        createBundleResponse.getStatusCode(),
+        createBundleResponse.getBundleId(),
+        createBundleResponse.getStatusDescription(),
+        createBundleResponse.getMissingFiles(),
+        createBundleResponse.getUploadURL());
+    assertEquals(200, createBundleResponse.getStatusCode());
+    assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
+
+    FileHashRequest newFileHashRequest = createFileHashRequest("test2.js");
+    ExtendBundleRequest extendBundleRequest =
+        new ExtendBundleRequest(newFileHashRequest.getFiles(), Collections.emptyList());
+    CreateBundleResponse extendBundleResponse =
+        DeepCodeRestApi.extendBundle(
+            loggedToken, createBundleResponse.getBundleId(), extendBundleRequest);
+    assertNotNull(extendBundleResponse);
+    System.out.printf(
+        "Extend Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        extendBundleResponse.getStatusCode(),
+        extendBundleResponse.getBundleId(),
+        extendBundleResponse.getStatusDescription(),
+        extendBundleResponse.getMissingFiles(),
+        extendBundleResponse.getUploadURL());
+    assertEquals(200, extendBundleResponse.getStatusCode());
+    assertFalse("List of missingFiles is empty.", extendBundleResponse.getMissingFiles().isEmpty());
   }
 
   @Test
   public void _040_UploadFiles() {
     System.out.println("\n--------------Upload Files by Hash----------------\n");
-    FileHashRequest fileHashRequest = createFileHashRequest();
+    FileHashRequest fileHashRequest = createFileHashRequest(null);
     CreateBundleResponse createBundleResponse =
         DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
     assertNotNull(createBundleResponse);
@@ -301,9 +337,11 @@ public class DeepCodeRestApiTest {
   @Test
   public void _090_getAnalysis() {
     System.out.println("\n--------------Get Analysis----------------\n");
-    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false));
+    assertAndPrintGetAnalysisResponse(
+        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false));
     System.out.println("\n---- With `Linters` param:\n");
-    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true));
+    assertAndPrintGetAnalysisResponse(
+        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true));
     System.out.println("\n---- With `severity=2` param:\n");
     assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false));
   }
