@@ -6,6 +6,7 @@ package ai.deepcode.javaclient;
 import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.*;
 
+import okhttp3.OkHttpClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
@@ -16,6 +17,7 @@ import retrofit2.http.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * https://deepcode.freshdesk.com/support/solutions/articles/60000346777-sessions
@@ -33,8 +35,13 @@ public final class DeepCodeRestApi {
 
   // Create simple REST adapter which points the baseUrl.
   private static Retrofit buildRetrofit(String baseUrl) {
+    OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(100, TimeUnit.SECONDS)
+            .writeTimeout(100, TimeUnit.SECONDS)
+            .readTimeout(100, TimeUnit.SECONDS).build();
     return new Retrofit.Builder()
         .baseUrl(baseUrl + "publicapi/")
+            .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build();
   }
