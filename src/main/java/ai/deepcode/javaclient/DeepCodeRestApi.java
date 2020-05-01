@@ -30,7 +30,6 @@ public final class DeepCodeRestApi {
   private DeepCodeRestApi() {}
 
   private static final String API_URL = "https://www.deepcode.ai/";
-  private static String userAgent = "JetBrains";
 
   private static Retrofit retrofit = buildRetrofit(API_URL);
 
@@ -57,10 +56,6 @@ public final class DeepCodeRestApi {
     retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl);
   }
 
-  public static void appendUserAgent(@NotNull String text) {
-    userAgent += "-" + text;
-  }
-
   private interface LoginCall {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("login")
@@ -73,7 +68,7 @@ public final class DeepCodeRestApi {
    * @return {@link LoginResponse} instance
    */
   @NotNull
-  public static LoginResponse newLogin() {
+  public static LoginResponse newLogin(@NotNull String userAgent) {
     final LoginCall loginCall = retrofit.create(LoginCall.class);
     try {
       final SourceString source = new SourceString(userAgent);

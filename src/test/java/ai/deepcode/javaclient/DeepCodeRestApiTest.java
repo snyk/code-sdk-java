@@ -42,11 +42,13 @@ public class DeepCodeRestApiTest {
   private static final String bundleId =
       "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
 
+  private static String userAgent = "Java-client-Test";
+
   @Test
   public void _010_newLogin() {
     System.out.println("\n--------------New Login----------------\n");
     LoginResponse response = null;
-    response = DeepCodeRestApi.newLogin();
+    response = DeepCodeRestApi.newLogin(userAgent);
     assertEquals(200, response.getStatusCode());
     assertEquals(
         "https://www.deepcode.ai/login-api?sessionToken=" + response.getSessionToken(),
@@ -73,7 +75,7 @@ public class DeepCodeRestApiTest {
     System.out.printf("Check Session call with token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(401, status);
 
-    token = DeepCodeRestApi.newLogin().getSessionToken();
+    token = DeepCodeRestApi.newLogin(userAgent).getSessionToken();
     status = DeepCodeRestApi.checkSession(token).getStatusCode();
     System.out.printf(
         "Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n",
@@ -169,7 +171,7 @@ public class DeepCodeRestApiTest {
         "Create Bundle call with malformed token [%1$s] is not accepted by server with Status code [%2$d].\n",
         brokenToken, response.getStatusCode());
 
-    final String incompleteLoginToken = DeepCodeRestApi.newLogin().getSessionToken();
+    final String incompleteLoginToken = DeepCodeRestApi.newLogin(userAgent).getSessionToken();
     response = DeepCodeRestApi.createBundle(incompleteLoginToken, files);
     assertNotNull(response);
     assertEquals(
