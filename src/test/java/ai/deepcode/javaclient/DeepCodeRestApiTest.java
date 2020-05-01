@@ -47,7 +47,7 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------New Login----------------\n");
     LoginResponse response = null;
     response = DeepCodeRestApi.newLogin();
-    assertEquals(response.getStatusCode(), 200);
+    assertEquals(200, response.getStatusCode());
     assertEquals(
         "https://www.deepcode.ai/login-api?sessionToken=" + response.getSessionToken(),
         response.getLoginURL());
