@@ -220,12 +220,10 @@ public class DeepCodeRestApiTest {
     MessageDigest digest;
     String absolutePath = testFile.getAbsolutePath();
     String deepCodedPath =
-        absolutePath.startsWith("/")
-            ? ""
-            : "/"
-                + ((fakeFileName == null)
-                    ? absolutePath
-                    : absolutePath.replace("test1.js", fakeFileName));
+        (absolutePath.startsWith("/") ? "" : "/")
+            + ((fakeFileName == null)
+                ? absolutePath
+                : absolutePath.replace("test1.js", fakeFileName));
     System.out.println("\nFile: " + deepCodedPath);
     System.out.println("-----------------");
 
