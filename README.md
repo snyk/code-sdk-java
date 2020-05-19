@@ -8,11 +8,11 @@ For APIs look for `DeepCodeRestApi` public methods. For descriptions look [Rest 
 To make a standalone jar file with all dependencies use `shadowJar` gradle task.
 - Clone this repository: `git clone https://github.com/DeepCodeAI/java-client.git` 
 - Switch to the dev branch: `git checkout origin/dev`
-- Run gradle task: `gradlew shadowJar`
-- Look for resulting JAR file at `..\build\libs`
+- Run gradle task: `source gradlew shadowJar`
+- Look for resulting JAR file at `./build/libs`
 
 ## Run tests
 
 - Clone this repository: `git clone https://github.com/DeepCodeAI/java-client.git` 
 - Switch to the dev branch: `git checkout origin/dev`
-- Run gradle test task: `gradlew test`
+- Run gradle test task: `source gradlew test --stacktrace --scan`
