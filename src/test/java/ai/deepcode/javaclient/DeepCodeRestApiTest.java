@@ -53,12 +53,9 @@ public class DeepCodeRestApiTest {
     assertEquals(
         "https://www.deepcode.ai/login-api?sessionToken=" + response.getSessionToken(),
         response.getLoginURL());
-    System.out.println(
-        "New login request passed with returned:"
-            + "\nsession token: "
-            + response.getSessionToken()
-            + "\nlogin URL: "
-            + response.getLoginURL());
+    System.out.printf(
+        "New login request passed with returned: \nsession token: %1$s \nlogin URL: %2$s\n",
+        response.getSessionToken(), response.getLoginURL());
   }
 
   @Test
@@ -131,12 +128,9 @@ public class DeepCodeRestApiTest {
             + "\n";
     assertEquals(errorMsg, response.getStatusCode(), 200);
 
-    System.out.println(
-        "Get Filters call returns next filters:"
-            + "\nextensions: "
-            + response.getExtensions()
-            + "\nconfigFiles: "
-            + response.getConfigFiles());
+    System.out.printf(
+        "Get Filters call returns next filters: \nextensions: %1$s \nconfigFiles: %2$s\n",
+        response.getExtensions(), response.getConfigFiles());
   }
 
   @Test
@@ -224,22 +218,21 @@ public class DeepCodeRestApiTest {
             + ((fakeFileName == null)
                 ? absolutePath
                 : absolutePath.replace("test1.js", fakeFileName));
-    System.out.println("\nFile: " + deepCodedPath);
+    System.out.printf("\nFile: %1$s\n", deepCodedPath);
     System.out.println("-----------------");
 
     // Append with System.currentTimeMillis() to make new Hash.
     try {
-      Writer output;
-      output = new BufferedWriter(new FileWriter(absolutePath, true));
-      output.append(String.valueOf(System.currentTimeMillis()));
-      output.close();
+      FileOutputStream fos = new FileOutputStream(absolutePath, true);
+      fos.write(String.valueOf(System.currentTimeMillis()).getBytes());
+      fos.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      System.out.println(e.getMessage());
     }
 
     String fileText;
     try {
-      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
+      fileText = Files.readString(Paths.get(absolutePath));
       digest = MessageDigest.getInstance("SHA-256");
     } catch (IOException | NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
@@ -249,7 +242,7 @@ public class DeepCodeRestApiTest {
 
     byte[] encodedhash = digest.digest(fileText.getBytes(StandardCharsets.UTF_8));
     String hash = bytesToHex(encodedhash);
-    System.out.println("File hash: " + hash);
+    System.out.printf("File hash: %1$s\n", hash);
 
     return new FileHashRequest(Collections.singletonMap(deepCodedPath, hash));
   }
@@ -320,7 +313,7 @@ public class DeepCodeRestApiTest {
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
-      fileText = new String(Files.readAllBytes(Paths.get(absolutePath)), StandardCharsets.UTF_8);
+      fileText = Files.readString(Paths.get(absolutePath));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -353,13 +346,9 @@ public class DeepCodeRestApiTest {
 
   private void assertAndPrintGetAnalysisResponse(GetAnalysisResponse response) {
     assertNotNull(response);
-    System.out.println(
-        "Get Analysis call for test file: \n"
-            + testFileContent
-            + "\nreturns Status code: "
-            + response.getStatusCode()
-            + "\nreturns Body: "
-            + response);
+    System.out.printf(
+        "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s with Body: %3$s\n",
+        testFileContent, response.getStatusCode(), response);
     //    assertEquals("DONE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
   }
