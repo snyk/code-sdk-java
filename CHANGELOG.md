@@ -1,3 +1,6 @@
-## [0.0.1] - 2019-08-22
+## [0.0.12] - 2020-05-22
+- Added support for Java 8, required for Android Studio
+
+## [0.0.11] - 2020-05-19
 ### Added
 - Initial release
