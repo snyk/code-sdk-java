@@ -18,7 +18,8 @@ repositories {
     jcenter()
 }
 
-version '0.0.11'
+version '0.0.12'
+sourceCompatibility = 1.8
 
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
