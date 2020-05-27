@@ -207,6 +207,69 @@ public class DeepCodeRestApiTest {
     assertEquals(200, response.getStatusCode());
   }
 
+  @Test
+  public void _036_Check_Bundle() {
+    System.out.println("\n--------------Check Bundle----------------\n");
+    FileHashRequest fileHashRequest = createFileHashRequest(null);
+    CreateBundleResponse createBundleResponse =
+        DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
+    assertNotNull(createBundleResponse);
+    System.out.printf(
+        "\nCreate Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        createBundleResponse.getStatusCode(),
+        createBundleResponse.getBundleId(),
+        createBundleResponse.getStatusDescription(),
+        createBundleResponse.getMissingFiles(),
+        createBundleResponse.getUploadURL());
+    assertEquals(200, createBundleResponse.getStatusCode());
+    assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
+
+    CreateBundleResponse checkBundleResponse =
+        DeepCodeRestApi.checkBundle(loggedToken, createBundleResponse.getBundleId());
+    assertNotNull(checkBundleResponse);
+    System.out.printf(
+        "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        checkBundleResponse.getStatusCode(),
+        checkBundleResponse.getBundleId(),
+        checkBundleResponse.getStatusDescription(),
+        checkBundleResponse.getMissingFiles(),
+        checkBundleResponse.getUploadURL());
+    assertEquals(200, checkBundleResponse.getStatusCode());
+    assertFalse("List of missingFiles is empty.", checkBundleResponse.getMissingFiles().isEmpty());
+    assertEquals(
+        "Checked and returned bundleId's are different.",
+        createBundleResponse.getBundleId(),
+        checkBundleResponse.getBundleId());
+
+    EmptyResponse uploadFileResponse = doUploadFile(createBundleResponse, fileHashRequest);
+
+    assertNotNull(uploadFileResponse);
+    System.out.printf(
+            "\nUpload Files call for file %3$s \nStatus code [%1$d] %2$s\n",
+            uploadFileResponse.getStatusCode(),
+            uploadFileResponse.getStatusDescription(),
+            createBundleResponse.getMissingFiles().get(0));
+    assertEquals(200, uploadFileResponse.getStatusCode());
+
+    CreateBundleResponse createBundleResponse1 =
+        DeepCodeRestApi.checkBundle(loggedToken, createBundleResponse.getBundleId());
+    assertNotNull(createBundleResponse1);
+    System.out.printf(
+        "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n uploadUrl: %5$s\n",
+        createBundleResponse1.getStatusCode(),
+        createBundleResponse1.getBundleId(),
+        createBundleResponse1.getStatusDescription(),
+        createBundleResponse1.getMissingFiles(),
+        createBundleResponse1.getUploadURL());
+    assertEquals(200, createBundleResponse1.getStatusCode());
+    assertTrue(
+        "List of missingFiles is NOT empty.", createBundleResponse1.getMissingFiles().isEmpty());
+    assertEquals(
+        "Checked and returned bundleId's are different.",
+        createBundleResponse.getBundleId(),
+        checkBundleResponse.getBundleId());
+  }
+
   private FileHashRequest createFileHashRequest(String fakeFileName) {
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
@@ -232,6 +295,7 @@ public class DeepCodeRestApiTest {
 
     String fileText;
     try {
+      // ?? com.intellij.openapi.util.io.FileUtil#loadFile(java.io.File, java.nio.charset.Charset)
       fileText = Files.readString(Paths.get(absolutePath));
       digest = MessageDigest.getInstance("SHA-256");
     } catch (IOException | NoSuchAlgorithmException e) {
@@ -309,10 +373,24 @@ public class DeepCodeRestApiTest {
     assertEquals(200, createBundleResponse.getStatusCode());
     assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
 
+    EmptyResponse response = doUploadFile(createBundleResponse, fileHashRequest);
+
+    assertNotNull(response);
+    System.out.printf(
+        "\nUpload Files call for file %3$s \nStatus code [%1$d] %2$s\n",
+        response.getStatusCode(),
+        response.getStatusDescription(),
+        createBundleResponse.getMissingFiles().get(0));
+    assertEquals(200, response.getStatusCode());
+  }
+
+  private EmptyResponse doUploadFile(
+      CreateBundleResponse createBundleResponse, FileHashRequest fileHashRequest) {
     final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
+      // ?? com.intellij.openapi.util.io.FileUtil#loadFile(java.io.File, java.nio.charset.Charset)
       fileText = Files.readString(Paths.get(absolutePath));
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -322,14 +400,8 @@ public class DeepCodeRestApiTest {
     final String fileHash = fileHashRequest.getFiles().get(filePath);
     final List<FileHash2ContentRequest> requestBody =
         Collections.singletonList(new FileHash2ContentRequest(fileHash, fileText));
-    EmptyResponse response =
-        DeepCodeRestApi.UploadFiles(loggedToken, createBundleResponse.getBundleId(), requestBody);
-
-    assertNotNull(response);
-    System.out.printf(
-        "Upload Files call return: Status code [%1$d] %2$s\n",
-        response.getStatusCode(), response.getStatusDescription());
-    assertEquals(200, response.getStatusCode());
+    return DeepCodeRestApi.UploadFiles(
+        loggedToken, createBundleResponse.getBundleId(), requestBody);
   }
 
   @Test
