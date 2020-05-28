@@ -202,6 +202,57 @@ public final class DeepCodeRestApi {
     return doCreateBundle(token, files);
   }
 
+  private interface CheckBundleCall {
+    //    @retrofit2.http.Headers("Content-Type: application/json")
+    @GET("bundle/{bundleId}")
+    Call<CreateBundleResponse> doCheckBundle(
+            @Header("Session-Token") String token,
+            @Path(value = "bundleId", encoded = true) String bundleId);
+  }
+
+  /**
+   * Checks the status of a bundle.
+   *
+   * @param bundleId the parent bundle to extend
+   * @return {@link CreateBundleResponse} instance
+   */
+  @NotNull
+  public static CreateBundleResponse checkBundle(
+          String token, String bundleId) {
+    CheckBundleCall checkBundleCall = retrofit.create(CheckBundleCall.class);
+    Response<CreateBundleResponse> retrofitResponse;
+    try {
+      retrofitResponse =
+              checkBundleCall.doCheckBundle(token, bundleId).execute();
+    } catch (IOException e) {
+      return new CreateBundleResponse();
+    }
+    CreateBundleResponse result = retrofitResponse.body();
+    if (result == null) {
+      result = new CreateBundleResponse();
+    }
+    result.setStatusCode(retrofitResponse.code());
+    switch (retrofitResponse.code()) {
+      case 200:
+        result.setStatusDescription("The bundle checked successfully");
+        break;
+      case 401:
+        result.setStatusDescription("Missing sessionToken or incomplete login process");
+        break;
+      case 403:
+        result.setStatusDescription("Unauthorized access to parent bundle");
+        break;
+      case 404:
+        result.setStatusDescription("Uploaded bundle has expired");
+        break;
+      default:
+        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
+        break;
+    }
+    return result;
+  }
+
+
   private interface ExtendBundleCall {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
