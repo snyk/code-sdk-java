@@ -1,3 +1,6 @@
+## [2.0.0] - 2020-06-20
+- Common logic moved to java-client from jetbrains-plugin
+
 ## [1.0.0] - 2020-06-20
 - Final major release for 1.x version branch before switching to 2.x
 
