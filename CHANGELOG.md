@@ -1,3 +1,6 @@
+## [1.0.0] - 2020-06-20
+- Final major release for 1.x version branch before switching to 2.x
+
 ## [0.0.13] - 2020-05-27
 - `Check Bundle` API function added
 
