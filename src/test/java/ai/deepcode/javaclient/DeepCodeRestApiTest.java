@@ -50,9 +50,7 @@ public class DeepCodeRestApiTest {
     LoginResponse response = null;
     response = DeepCodeRestApi.newLogin(userAgent);
     assertEquals(200, response.getStatusCode());
-    assertEquals(
-        "https://www.deepcode.ai/login-api?sessionToken=" + response.getSessionToken(),
-        response.getLoginURL());
+    assertTrue(response.getLoginURL().contains(response.getSessionToken()));
     System.out.printf(
         "New login request passed with returned: \nsession token: %1$s \nlogin URL: %2$s\n",
         response.getSessionToken(), response.getLoginURL());
@@ -245,10 +243,10 @@ public class DeepCodeRestApiTest {
 
     assertNotNull(uploadFileResponse);
     System.out.printf(
-            "\nUpload Files call for file %3$s \nStatus code [%1$d] %2$s\n",
-            uploadFileResponse.getStatusCode(),
-            uploadFileResponse.getStatusDescription(),
-            createBundleResponse.getMissingFiles().get(0));
+        "\nUpload Files call for file %3$s \nStatus code [%1$d] %2$s\n",
+        uploadFileResponse.getStatusCode(),
+        uploadFileResponse.getStatusDescription(),
+        createBundleResponse.getMissingFiles().get(0));
     assertEquals(200, uploadFileResponse.getStatusCode());
 
     CreateBundleResponse createBundleResponse1 =
