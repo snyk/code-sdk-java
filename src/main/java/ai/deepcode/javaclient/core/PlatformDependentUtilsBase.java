@@ -3,18 +3,23 @@ package ai.deepcode.javaclient.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public abstract class PlatformDependentUtilsBase {
 
   public static final int DEFAULT_DELAY = 1000; // milliseconds
   public static final int DEFAULT_DELAY_SMALL = 200; // milliseconds
 
-  public void delay(long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+  public void delay(int millis, @Nullable Object progress) {
+    int counts = millis / 100;
+    for (int i = 1; i <= counts; i++) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      progressCheckCanceled(progress);
     }
-    progressCheckCanceled();
   }
 
   @NotNull
@@ -27,7 +32,7 @@ public abstract class PlatformDependentUtilsBase {
   public abstract String getFileName(@NotNull Object file);
 
   @NotNull
-  public String getDeepCodedFilePath(@NotNull Object file){
+  public String getDeepCodedFilePath(@NotNull Object file) {
     final String path = getProjectBasedFilePath(file);
     return path.startsWith("/") ? path : "/" + path;
   }
@@ -39,28 +44,26 @@ public abstract class PlatformDependentUtilsBase {
 
   public abstract int getLineStartOffset(@NotNull Object file, int line);
 
+  public abstract void runInBackgroundCancellable(
+      @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
 
-  public abstract void runInBackgroundCancellable(@NotNull Object file, @NotNull Runnable runnable);
-
-  public abstract void runInBackground(@NotNull Object project, @NotNull Runnable runnable);
+  public abstract void runInBackground(
+      @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
 
   public abstract void cancelRunningIndicators(@NotNull Object project);
 
   public abstract void doFullRescan(@NotNull Object project);
 
-
   public abstract void refreshPanel(@NotNull Object project);
 
-  // todo: replace it with LoginUtils direct call
+  // we can't use LoginUtils direct call due to circular dependencies
   public abstract boolean isLogged(@Nullable Object project, boolean userActionNeeded);
 
+  public abstract void progressSetText(@Nullable Object progress, String text);
 
-  public abstract void progressSetText(String text);
+  public abstract void progressCheckCanceled(@Nullable Object progress);
 
-  public abstract void progressCheckCanceled();
-
-  public abstract void progressSetFraction(double fraction);
-
+  public abstract void progressSetFraction(@Nullable Object progress, double fraction);
 
   public abstract void showInBrowser(@NotNull String url);
 

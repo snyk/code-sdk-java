@@ -31,7 +31,7 @@ public abstract class LoginUtilsBase {
   /** network request! */
   public boolean isLogged(@Nullable Object project, boolean userActionNeeded) {
     final String sessionToken = deepCodeParams.getSessionToken();
-    pdUtils.progressCheckCanceled();
+    // pdUtils.progressCheckCanceled();
     final EmptyResponse response = DeepCodeRestApi.checkSession(sessionToken);
     boolean isLogged = response.getStatusCode() == 200;
     String message = response.getStatusDescription();
@@ -71,7 +71,8 @@ public abstract class LoginUtilsBase {
         // BrowserUtil.open(DeepCodeParams.getInstance().getLoginUrl());
       }
       if (!isLoginCheckLoopStarted) {
-        pdUtils.runInBackground(project, () -> startLoginCheckLoop(project));
+        pdUtils.runInBackground(
+            project, "New Login request...", (progress) -> startLoginCheckLoop(project, progress));
         //        ReadAction.nonBlocking(() -> startLoginCheckLoop(project))
         //            .submit(NonUrgentExecutor.getInstance());
         dcLogger.logInfo("LoginCheckLoop started");
@@ -82,11 +83,11 @@ public abstract class LoginUtilsBase {
     }
   }
 
-  private void startLoginCheckLoop(@NotNull Object project) {
+  private void startLoginCheckLoop(@NotNull Object project, @NotNull Object progress) {
     isLoginCheckLoopStarted = true;
     try {
       do {
-        pdUtils.delay(pdUtils.DEFAULT_DELAY);
+        pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
       } while (!isLogged(project, false));
     } finally {
       isLoginCheckLoopStarted = false;
