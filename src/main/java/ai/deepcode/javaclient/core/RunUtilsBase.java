@@ -1,0 +1,314 @@
+package ai.deepcode.javaclient.core;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+public abstract class RunUtilsBase {
+
+  protected final PlatformDependentUtilsBase pdUtils;
+  private final HashContentUtilsBase hashContentUtils;
+  private final AnalysisDataBase analysisData;
+  private final DeepCodeUtilsBase deepCodeUtils;
+  protected final DCLoggerBase dcLogger;
+
+  protected RunUtilsBase(
+      PlatformDependentUtilsBase pdUtils,
+      HashContentUtilsBase hashContentUtils,
+      AnalysisDataBase analysisData,
+      DeepCodeUtilsBase deepCodeUtils,
+      DCLoggerBase dcLogger) {
+    this.pdUtils = pdUtils;
+    this.hashContentUtils = hashContentUtils;
+    this.analysisData = analysisData;
+    this.deepCodeUtils = deepCodeUtils;
+    this.dcLogger = dcLogger;
+  }
+
+  /**
+   * Should NOT run another Background task from inside as Progress will be removed from
+   * mapProject2Progresses after the end of this task.
+   */
+  public void runInBackground(
+      @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
+    doBackgroundRun(
+        project,
+        title,
+        (progress) -> {
+          dcLogger.logInfo(
+              "New Process ["
+                  + progress.toString()
+                  + "] \nstarted at "
+                  + pdUtils.getProjectName(project));
+          getRunningProgresses(project).add(progress);
+
+          progressConsumer.accept(progress);
+
+          dcLogger.logInfo(
+              "Process ["
+                  + progress.toString()
+                  + "] \nending at "
+                  + pdUtils.getProjectName(project));
+          getRunningProgresses(project).remove(progress);
+        });
+  }
+
+  /** Should implement background task creation with call of progressConsumer() inside Job.run() */
+  protected abstract void doBackgroundRun(
+      @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
+  // indicator.setIndeterminate(false);
+  // "Deepcode: " + title
+
+  // protected abstract String getProgressPresentation(@NotNull Object progress);
+  // progress.toString()
+
+  private static final Map<Object, Set<Object>> mapProject2Progresses = new ConcurrentHashMap<>();
+
+  protected static synchronized Set<Object> getRunningProgresses(@NotNull Object project) {
+    return mapProject2Progresses.computeIfAbsent(project, p -> new HashSet<>());
+  }
+
+  // ??? list of all running background tasks
+  // com.intellij.openapi.wm.ex.StatusBarEx#getBackgroundProcesses
+  // todo? Disposer.register(project, this)
+  // https://intellij-support.jetbrains.com/hc/en-us/community/posts/360008241759/comments/360001689399
+  public void cancelRunningIndicators(@NotNull Object project) {
+    String indicatorsList =
+        getRunningProgresses(project).stream()
+            .map(Object::toString)
+            .collect(Collectors.joining("\n"));
+    dcLogger.logInfo("Canceling ProgressIndicators:\n" + indicatorsList);
+    bulkModeForceUnset(project);
+    getRunningProgresses(project).forEach(this::cancelProgress);
+    getRunningProgresses(project).clear();
+    projectsWithFullRescanRequested.remove(project);
+  }
+
+  protected abstract void cancelProgress(@NotNull Object progress);
+  // ProgressIndicator.cancel()
+
+  protected abstract void bulkModeForceUnset(@NotNull Object project);
+  // in case any indicator holds Bulk mode process
+  // BulkMode.forceUnset(project);
+
+  private static final Map<Object, Object> mapFileProcessed2CancellableProgress =
+      new ConcurrentHashMap<>();
+
+  private static final Map<Object, Consumer<Object>> mapFile2Runnable = new ConcurrentHashMap<>();
+
+  /**
+   * Could run another Background task from inside as Progress is NOT removed from
+   * mapProject2Progresses after the end of this task.
+   */
+  public void runInBackgroundCancellable(
+      @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
+    final String s = progressConsumer.toString();
+    final String runId = s.substring(s.lastIndexOf('/'), s.length() - 1);
+    dcLogger.logInfo(
+        "runInBackgroundCancellable requested for: "
+            + pdUtils.getFileName(file)
+            + " with progressConsumer "
+            + runId);
+    // can't use `file` as Id cause in Idea same file may have different PsiFile instances during
+    // lifetime
+    final String fileId = pdUtils.getDeepCodedFilePath(file);
+
+    // To proceed multiple PSI events in a bunch (every 100 milliseconds)
+    Consumer<Object> prevRunnable = mapFile2Runnable.put(fileId, progressConsumer);
+    if (prevRunnable != null) return;
+    dcLogger.logInfo(
+        "new Background task registered for: "
+            + pdUtils.getFileName(file)
+            + " with progressConsumer "
+            + runId);
+
+    analysisData.setUpdateInProgress();
+
+    final Object project = pdUtils.getProject(file);
+
+    doBackgroundRun(
+        project,
+        title,
+        (progress) -> {
+          // To let new event cancel the currently running one
+          Object prevProgress = mapFileProcessed2CancellableProgress.put(fileId, progress);
+          if (prevProgress != null
+              // can't use prevProgressIndicator.isRunning() due to
+              // https://youtrack.jetbrains.com/issue/IDEA-241055
+              && getRunningProgresses(project).contains(prevProgress)) {
+            dcLogger.logInfo(
+                "Previous Process cancelling for "
+                    + pdUtils.getFileName(file)
+                    + "\nProgress ["
+                    + prevProgress.toString()
+                    + "]");
+            cancelProgress(prevProgress);
+            getRunningProgresses(project).remove(prevProgress);
+            hashContentUtils.removeFileHashContent(file);
+          }
+          getRunningProgresses(project).add(progress);
+
+          // small delay to let new consequent requests proceed and cancel current one
+          pdUtils.delay(pdUtils.DEFAULT_DELAY_SMALL, progress);
+
+          Consumer<Object> actualRunnable = mapFile2Runnable.get(fileId);
+          if (actualRunnable != null) {
+            final String s1 = actualRunnable.toString();
+            final String runIdToRun = s1.substring(s1.lastIndexOf('/'), s1.length() - 1);
+            dcLogger.logInfo(
+                "New Process started for "
+                    + pdUtils.getFileName(file)
+                    + " with Runnable "
+                    + runIdToRun);
+            mapFile2Runnable.remove(fileId);
+
+            // final delay before actual heavy Network request
+            // to let new consequent requests proceed and cancel current one
+            pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
+            actualRunnable.accept(progress);
+
+          } else {
+            dcLogger.logWarn("No actual Runnable found for: " + pdUtils.getFileName(file));
+          }
+          dcLogger.logInfo("Process ending for " + pdUtils.getFileName(file));
+        });
+  }
+
+  public boolean isFullRescanRequested(@NotNull Object project) {
+    return projectsWithFullRescanRequested.contains(project);
+  }
+
+  private static final Set<Object> projectsWithFullRescanRequested = ConcurrentHashMap.newKeySet();
+
+  private static final Map<Object, Object> mapProject2CancellableIndicator =
+      new ConcurrentHashMap<>();
+  private static final Map<Object, Long> mapProject2CancellableRequestId =
+      new ConcurrentHashMap<>();
+
+  private static final Map<Object, Long> mapProject2RequestId = new ConcurrentHashMap<>();
+  private static final Set<Long> bulkModeRequests = ConcurrentHashMap.newKeySet();
+
+  protected abstract void bulkModeUnset(@NotNull Object project);
+  // BulkMode.unset(project);
+
+  public void rescanInBackgroundCancellableDelayed(
+      @NotNull Object project, int delayMilliseconds, boolean inBulkMode) {
+    final long requestId = System.currentTimeMillis();
+    dcLogger.logInfo(
+        "rescanInBackgroundCancellableDelayed requested for: ["
+            + pdUtils.getProjectName(project)
+            + "] with RequestId "
+            + requestId);
+    projectsWithFullRescanRequested.add(project);
+
+    // To proceed multiple events in a bunch (every <delayMilliseconds>)
+    Long prevRequestId = mapProject2RequestId.put(project, requestId);
+    if (inBulkMode) bulkModeRequests.add(requestId);
+    if (prevRequestId != null) {
+      if (bulkModeRequests.remove(prevRequestId)) {
+        bulkModeUnset(project);
+      }
+      return;
+    }
+    dcLogger.logInfo(
+        "new Background Rescan task registered for ["
+            + pdUtils.getProjectName(project)
+            + "] with RequestId "
+            + requestId);
+
+    doBackgroundRun(
+        project,
+        "Full Project re-Analysing",
+        (progress) -> {
+          // To let new event cancel the currently running one
+          Object prevProgressIndicator = mapProject2CancellableIndicator.put(project, progress);
+          if (prevProgressIndicator != null
+              // can't use prevProgressIndicator.isRunning() due to
+              // https://youtrack.jetbrains.com/issue/IDEA-241055
+              && getRunningProgresses(project).remove(prevProgressIndicator)) {
+            dcLogger.logInfo(
+                "Previous Rescan cancelling for "
+                    + pdUtils.getProjectName(project)
+                    + "\nProgress ["
+                    + prevProgressIndicator.toString()
+                    + "]");
+            cancelProgress(prevProgressIndicator);
+          }
+          getRunningProgresses(project).add(progress);
+
+          // unset BulkMode if cancelled process did run under BulkMode
+          Long prevReqId = mapProject2CancellableRequestId.put(project, requestId);
+          if (prevReqId != null && bulkModeRequests.remove(prevReqId)) {
+            bulkModeUnset(project);
+          }
+
+          // delay to let new consequent requests proceed and cancel current one
+          // or to let Idea proceed internal events (.gitignore update)
+          pdUtils.delay(delayMilliseconds, progress);
+
+          Long actualRequestId = mapProject2RequestId.get(project);
+          if (actualRequestId != null) {
+            dcLogger.logInfo(
+                "New Rescan started for ["
+                    + pdUtils.getProjectName(project)
+                    + "] with RequestId "
+                    + actualRequestId);
+            mapProject2RequestId.remove(project);
+
+            // actual rescan
+            analysisData.removeProjectFromCaches(project);
+            updateCachedAnalysisResults(project, null, progress);
+
+            if (bulkModeRequests.remove(actualRequestId)) {
+              bulkModeUnset(project);
+            }
+          } else {
+            dcLogger.logWarn("No actual RequestId found for: " + pdUtils.getProjectName(project));
+          }
+          projectsWithFullRescanRequested.remove(project);
+          dcLogger.logInfo("Rescan ending for " + pdUtils.getProjectName(project));
+        });
+  }
+
+  protected abstract Object[] getOpenProjects();
+  // ProjectManager.getInstance().getOpenProjects()
+
+  public void asyncAnalyseProjectAndUpdatePanel(@Nullable Object project) {
+    final Object[] projects = (project == null) ? getOpenProjects() : new Object[] {project};
+    for (Object prj : projects) {
+      //    DumbService.getInstance(project).runWhenSmart(() ->
+      runInBackground(
+          prj,
+          "Analysing project...",
+          (progress) -> {
+            updateCachedAnalysisResults(prj, null, progress);
+            updateUI(prj);
+          });
+    }
+  }
+
+  protected abstract void updateUI(Object project);
+
+  public void updateCachedAnalysisResults(
+      @NotNull Object project, @Nullable Collection<Object> files, @NotNull Object progress) {
+    updateCachedAnalysisResults(project, files, Collections.emptyList(), progress);
+  }
+
+  public void updateCachedAnalysisResults(
+      @NotNull Object project,
+      @Nullable Collection<Object> files,
+      @NotNull Collection<Object> filesToRemove,
+      @NotNull Object progress) {
+    analysisData.updateCachedResultsForFiles(
+        project,
+        (files != null)
+            ? files
+            : deepCodeUtils.getAllSupportedFilesInProject(project),
+        filesToRemove,
+        progress);
+  }
+}

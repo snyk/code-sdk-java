@@ -124,7 +124,7 @@ public class DeepCodeRestApiTest {
             + "] "
             + response.getStatusDescription()
             + "\n";
-    assertEquals(errorMsg, response.getStatusCode(), 200);
+    assertEquals(errorMsg, 200, response.getStatusCode());
 
     System.out.printf(
         "Get Filters call returns next filters: \nextensions: %1$s \nconfigFiles: %2$s\n",

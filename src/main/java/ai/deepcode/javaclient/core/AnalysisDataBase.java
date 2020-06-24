@@ -208,7 +208,8 @@ public abstract class AnalysisDataBase {
           pdUtils.runInBackgroundCancellable(
               firstFile,
               "Synchronize analysis result with server...",
-              (progress1) -> retrieveSuggestions(project, filesToProceed, filesToRemove, progress1));
+              (progress1) ->
+                  retrieveSuggestions(project, filesToProceed, filesToRemove, progress1));
         } else {
           mapFile2Suggestions.putAll(
               retrieveSuggestions(project, filesToProceed, filesToRemove, progress));
@@ -662,7 +663,14 @@ public abstract class AnalysisDataBase {
           final int endCol = fileRange.getCols().get(1);
           final int lineStartOffset = pdUtils.getLineStartOffset(file, startRow - 1); // to 0-based
           final int lineEndOffset = pdUtils.getLineStartOffset(file, endRow - 1);
-          ranges.add(new MyTextRange(lineStartOffset + startCol, lineEndOffset + endCol));
+          ranges.add(
+              new MyTextRange(
+                  lineStartOffset + startCol,
+                  lineEndOffset + endCol,
+                  startRow,
+                  endRow,
+                  startCol,
+                  endCol));
         }
         mySuggestions.add(
             new SuggestionForFile(
