@@ -304,10 +304,13 @@ public abstract class AnalysisDataBase {
       pdUtils.progressSetFraction(progress, ((double) fileCounter++) / totalFiles);
       pdUtils.progressSetText(
           progress, PREPARE_FILES_TEXT + fileCounter + " of " + totalFiles + " files done.");
+
       final String path = pdUtils.getDeepCodedFilePath(file);
       // info("getHash requested");
       final String hash = hashContentUtils.getHash(file);
-      // info("getHash done");
+      if (fileCounter == 1)
+        dcLogger.logInfo("First file to proceed: \npath = " + path + "\nhash = " + hash);
+
       mapPath2Hash.put(path, hash);
       sizePath2Hash += (path.length() + hash.length()) * 2; // rough estimation of bytes occupied
       if (sizePath2Hash > MAX_BUNDLE_SIZE) {
