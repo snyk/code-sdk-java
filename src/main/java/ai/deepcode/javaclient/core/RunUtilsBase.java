@@ -35,9 +35,8 @@ public abstract class RunUtilsBase {
    */
   public void runInBackground(
       @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
-    doBackgroundRun(
-        project,
-        title,
+    dcLogger.logInfo("runInBackground requested");
+    final Consumer<Object> wrappedConsumer =
         (progress) -> {
           dcLogger.logInfo(
               "New Process ["
@@ -54,14 +53,26 @@ public abstract class RunUtilsBase {
                   + "] \nending at "
                   + pdUtils.getProjectName(project));
           getRunningProgresses(project).remove(progress);
-        });
+        };
+    if (!reuseCurrentProgress(project, title, wrappedConsumer)) {
+      doBackgroundRun(project, title, wrappedConsumer);
+    }
+    ;
   }
+
+  /**
+   * Should implement reuse of currently running parent DeepCode Progress if possible
+   *
+   * @return true if reuse been successful
+   */
+  protected abstract boolean reuseCurrentProgress(
+      @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
 
   /** Should implement background task creation with call of progressConsumer() inside Job.run() */
   protected abstract void doBackgroundRun(
       @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
   // indicator.setIndeterminate(false);
-  // "Deepcode: " + title
+  // "DeepCode: " + title
 
   // protected abstract String getProgressPresentation(@NotNull Object progress);
   // progress.toString()
@@ -305,9 +316,7 @@ public abstract class RunUtilsBase {
       @NotNull Object progress) {
     analysisData.updateCachedResultsForFiles(
         project,
-        (files != null)
-            ? files
-            : deepCodeUtils.getAllSupportedFilesInProject(project),
+        (files != null) ? files : deepCodeUtils.getAllSupportedFilesInProject(project),
         filesToRemove,
         progress);
   }
