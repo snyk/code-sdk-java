@@ -119,7 +119,10 @@ public abstract class AnalysisDataBase {
       dcLogger.logInfo("MUTEX RELEASED");
       MUTEX.unlock();
     }
+    updateUIonFilesRemovalFromCache(files);
   }
+
+  protected abstract void updateUIonFilesRemovalFromCache(@NotNull Collection<Object> files);
 
   public void removeProjectFromCaches(@NotNull Object project) {
     dcLogger.logInfo("Caches clearance requested for project: " + project);

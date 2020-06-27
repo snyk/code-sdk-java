@@ -297,12 +297,9 @@ public abstract class RunUtilsBase {
           "Analysing project...",
           (progress) -> {
             updateCachedAnalysisResults(prj, null, progress);
-            updateUI(prj);
           });
     }
   }
-
-  protected abstract void updateUI(Object project);
 
   public void updateCachedAnalysisResults(
       @NotNull Object project, @Nullable Collection<Object> files, @NotNull Object progress) {
@@ -319,5 +316,10 @@ public abstract class RunUtilsBase {
         (files != null) ? files : deepCodeUtils.getAllSupportedFilesInProject(project),
         filesToRemove,
         progress);
+    updateAnalysisResultsUIPresentation(
+        (files != null) ? files : analysisData.getAllFilesWithSuggestions(project));
   }
+
+  protected abstract void updateAnalysisResultsUIPresentation(@NotNull Collection<Object> files);
+
 }
