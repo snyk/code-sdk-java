@@ -235,17 +235,30 @@ public abstract class AnalysisDataBase {
     }
   }
 
+  // todo? propagate userActionNeeded through whole methods call chain
+  // fixme: should be project based
   private static boolean loginRequested = false;
+  private static boolean isNotSucceedWarnShown = false;
 
   private boolean isNotSucceed(@NotNull Object project, EmptyResponse response, String message) {
     if (response.getStatusCode() == 200) {
-      loginRequested = false;
-      return false;
+      return loginRequested = isNotSucceedWarnShown = false;
     } else if (response.getStatusCode() == 401) {
       pdUtils.isLogged(project, !loginRequested);
-      loginRequested = true;
+      loginRequested = isNotSucceedWarnShown = true;
     }
-    dcLogger.logWarn(message + response.getStatusCode() + " " + response.getStatusDescription());
+    final String fullMessage =
+        message + response.getStatusCode() + " " + response.getStatusDescription();
+    dcLogger.logWarn(fullMessage);
+    if (!isNotSucceedWarnShown) {
+      if (response.getStatusCode() / 100 == 4) {
+        pdUtils.showWarn("Network request fail: " + fullMessage, project);
+      } else {
+        pdUtils.showWarn(
+            "Server internal error. Please, try again later.\n" + fullMessage, project);
+      }
+      isNotSucceedWarnShown = true;
+    }
     return true;
   }
 
