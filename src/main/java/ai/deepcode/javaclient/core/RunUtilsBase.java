@@ -287,11 +287,9 @@ public abstract class RunUtilsBase {
         });
   }
 
-  protected abstract Object[] getOpenProjects();
-  // ProjectManager.getInstance().getOpenProjects()
-
+  // todo: replace it usage with doFullRescan as the latter is cancellable?
   public void asyncAnalyseProjectAndUpdatePanel(@Nullable Object project) {
-    final Object[] projects = (project == null) ? getOpenProjects() : new Object[] {project};
+    final Object[] projects = (project == null) ? pdUtils.getOpenProjects() : new Object[] {project};
     for (Object prj : projects) {
       //    DumbService.getInstance(project).runWhenSmart(() ->
       runInBackground(

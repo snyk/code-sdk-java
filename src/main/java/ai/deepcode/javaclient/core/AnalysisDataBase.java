@@ -178,7 +178,7 @@ public abstract class AnalysisDataBase {
     }
     dcLogger.logInfo("Update requested for " + psiFiles.size() + " files: " + psiFiles.toString());
     if (!deepCodeParams.consentGiven(project)) {
-      dcLogger.logWarn("Consent check fail! Object: " + pdUtils.getProjectName(project));
+      dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
       return;
     }
     try {

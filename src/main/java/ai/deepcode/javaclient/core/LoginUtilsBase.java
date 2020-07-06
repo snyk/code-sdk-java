@@ -94,8 +94,11 @@ public abstract class LoginUtilsBase {
       dcLogger.logInfo("LoginCheckLoop finished for project: " + pdUtils.getProjectName(project));
     }
     pdUtils.showInfo("Login succeed", project);
-    analysisData.resetCachesAndTasks(project); // do we need it??
-    pdUtils.doFullRescan(project);
+    // all projects should be re-scanned
+    for (Object prj : pdUtils.getOpenProjects()) {
+      analysisData.resetCachesAndTasks(prj); // do we need it??
+      pdUtils.doFullRescan(prj);
+    }
     //    AnalysisData.getInstance().resetCachesAndTasks(project);
     //    RunUtils.asyncAnalyseProjectAndUpdatePanel(project);
   }

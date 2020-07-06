@@ -40,6 +40,9 @@ public abstract class PlatformDependentUtilsBase {
   @NotNull
   protected abstract String getProjectBasedFilePath(@NotNull Object file);
 
+  public abstract Object[] getOpenProjects();
+  // ProjectManager.getInstance().getOpenProjects()
+
   public abstract long getFileSize(@NotNull Object file);
 
   public abstract int getLineStartOffset(@NotNull Object file, int line);
