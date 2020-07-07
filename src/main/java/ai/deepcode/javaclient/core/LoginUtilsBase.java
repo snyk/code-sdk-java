@@ -28,8 +28,17 @@ public abstract class LoginUtilsBase {
 
   private static boolean isLoginCheckLoopStarted = false;
 
-  /** network request! */
+  /** inner network request! */
   public boolean isLogged(@Nullable Object project, boolean userActionNeeded) {
+    boolean isLogged = checkLogin(project, userActionNeeded);
+    if (isLogged && project != null) {
+      isLogged = checkConsent(project, userActionNeeded);
+    }
+    return isLogged;
+  }
+
+  /** network request! */
+  public boolean checkLogin(@Nullable Object project, boolean userActionNeeded) {
     final String sessionToken = deepCodeParams.getSessionToken();
     // pdUtils.progressCheckCanceled();
     final EmptyResponse response = DeepCodeRestApi.checkSession(sessionToken);
@@ -45,16 +54,21 @@ public abstract class LoginUtilsBase {
         message = "Authenticate using your GitHub, Bitbucket or GitLab account";
       }
       pdUtils.showLoginLink(project, message);
-    } else if (isLogged && project != null) {
-      if (deepCodeParams.consentGiven(project)) {
-        dcLogger.logInfo("Consent check succeed for: " + pdUtils.getProjectName(project));
-      } else {
-        dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
-        isLogged = false;
+    }
+    return isLogged;
+  }
+
+  public boolean checkConsent(@NotNull Object project, boolean userActionNeeded) {
+    final boolean consentGiven = deepCodeParams.consentGiven(project);
+    if (consentGiven) {
+      dcLogger.logInfo("Consent check succeed for: " + pdUtils.getProjectName(project));
+    } else {
+      dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
+      if (userActionNeeded) {
         pdUtils.showConsentRequest(project, userActionNeeded);
       }
     }
-    return isLogged;
+    return consentGiven;
   }
 
   /** network request! */
@@ -88,16 +102,18 @@ public abstract class LoginUtilsBase {
     try {
       do {
         pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
-      } while (!isLogged(project, false));
+      } while (!checkLogin(project, false));
     } finally {
       isLoginCheckLoopStarted = false;
       dcLogger.logInfo("LoginCheckLoop finished for project: " + pdUtils.getProjectName(project));
     }
-    pdUtils.showInfo("Login succeed", project);
+    // pdUtils.showInfo("Login succeed", project);
     // all projects should be re-scanned
     for (Object prj : pdUtils.getOpenProjects()) {
       analysisData.resetCachesAndTasks(prj); // do we need it??
-      pdUtils.doFullRescan(prj);
+      if (checkConsent(prj, true)) {
+        pdUtils.doFullRescan(prj);
+      }
     }
     //    AnalysisData.getInstance().resetCachesAndTasks(project);
     //    RunUtils.asyncAnalyseProjectAndUpdatePanel(project);
