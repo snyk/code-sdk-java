@@ -17,9 +17,17 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
   }
 
   private static final Map<Object, Set<String>> map_dcignore2Regexps = new ConcurrentHashMap<>();
+  private static final Map<Object, Set<String>> map_gitignore2Regexps = new ConcurrentHashMap<>();
 
-  public boolean isIgnoredFile(@NotNull Object file) {
+  public boolean isDcIgnoredFile(@NotNull Object file) {
     return map_dcignore2Regexps.entrySet().stream()
+        .filter(e -> inScope(e.getKey(), file))
+        .flatMap(e -> e.getValue().stream())
+        .anyMatch(getFilePath(file)::matches);
+  }
+
+  public boolean isGitIgnoredFile(@NotNull Object file) {
+    return map_gitignore2Regexps.entrySet().stream()
         .filter(e -> inScope(e.getKey(), file))
         .flatMap(e -> e.getValue().stream())
         .anyMatch(getFilePath(file)::matches);
@@ -27,10 +35,12 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
 
   protected abstract String getFilePath(@NotNull Object file);
 
-  protected abstract boolean inScope(@NotNull Object dcignoreFile, @NotNull Object fileToCheck);
+  private boolean inScope(@NotNull Object ignoreFile, @NotNull Object fileToCheck) {
+    return getFilePath(fileToCheck).startsWith(getDirPath(ignoreFile));
+  };
 
   public boolean is_ignoreFile(@NotNull Object file) {
-    return is_dcignoreFile(file) || getFileName(file).equals(".gitignore");
+    return is_dcignoreFile(file) || is_gitignoreFile(file);
   }
 
   protected abstract String getFileName(@NotNull Object file);
@@ -39,18 +49,29 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
     return getFileName(file).equals(".dcignore");
   }
 
+  public boolean is_gitignoreFile(@NotNull Object file) {
+    return getFileName(file).equals(".gitignore");
+  }
+
   public void remove_dcignoreFileContent(@NotNull Object file) {
     map_dcignore2Regexps.remove(file);
   }
 
+  public void remove_gitignoreFileContent(@NotNull Object file) {
+    map_gitignore2Regexps.remove(file);
+  }
+
   public void update_dcignoreFileContent(@NotNull Object file) {
-    // map_dcignore2Regexps.remove(file);
-    map_dcignore2Regexps.put(file, parse_dcignoreFile2Regexps(file));
+    map_dcignore2Regexps.put(file, parse_ignoreFile2Regexps(file));
+  }
+
+  public void update_gitignoreFileContent(@NotNull Object file) {
+    map_gitignore2Regexps.put(file, parse_ignoreFile2Regexps(file));
   }
 
   protected abstract String getDirPath(@NotNull Object file);
 
-  private Set<String> parse_dcignoreFile2Regexps(@NotNull Object file) {
+  private Set<String> parse_ignoreFile2Regexps(@NotNull Object file) {
     Set<String> result = new HashSet<>();
     String basePath = getDirPath(file);
     String lineSeparator = "[\n\r]";

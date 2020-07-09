@@ -38,6 +38,11 @@ public abstract class DeepCodeUtilsBase {
     allProjectFiles.stream()
         .filter(ignoreInfoHolder::is_dcignoreFile)
         .forEach(ignoreInfoHolder::update_dcignoreFileContent);
+    // Initial scan for .gitignore files
+    allProjectFiles.stream()
+        .filter(ignoreInfoHolder::is_gitignoreFile)
+        .forEach(ignoreInfoHolder::update_gitignoreFileContent);
+
     final List<Object> result =
         allProjectFiles.stream().filter(this::isSupportedFileFormat).collect(Collectors.toList());
     if (result.isEmpty()) dcLogger.logWarn("Empty supported files list for project: " + project);
@@ -50,7 +55,7 @@ public abstract class DeepCodeUtilsBase {
 
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
-    if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnored(file)) return false;
+    if (ignoreInfoHolder.isDcIgnoredFile(file) || isGitIgnored(file)) return false;
     final boolean result =
         getFileLength(file) < MAX_FILE_SIZE
             && (supportedExtensions.contains(getFileExtention(file))
