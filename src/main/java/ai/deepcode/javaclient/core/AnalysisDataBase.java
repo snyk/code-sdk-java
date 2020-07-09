@@ -546,14 +546,17 @@ public abstract class AnalysisDataBase {
     String newBundleId = bundleResponse.getBundleId();
     // By man: "Extending a bundle by removing all the parent bundle's files is not allowed."
     // In reality new bundle returned with next bundleID:
-    // gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000
+    // .../DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000
     if (newBundleId.endsWith(
         "/DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000")) {
       newBundleId = "";
     }
     mapProject2BundleId.put(project, newBundleId);
     isNotSucceed(project, bundleResponse, "Bad Create/Extend Bundle request: ");
-    return bundleResponse;
+    // just make new bundle in case of 404 Parent bundle has expired
+    return (bundleResponse.getStatusCode() == 404)
+        ? makeNewBundle(project, mapPath2Hash, filesToRemove)
+        : bundleResponse;
   }
 
   private void doUploadFiles(
