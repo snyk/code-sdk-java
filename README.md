@@ -1,6 +1,8 @@
 # java-client
 Deepcode Public API package in Java
 
+[![deepcode](https://www.deepcode.ai/api/gh/badge?key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwbGF0Zm9ybTEiOiJnaCIsIm93bmVyMSI6IkRlZXBDb2RlQUkiLCJyZXBvMSI6ImphdmEtY2xpZW50IiwiaW5jbHVkZUxpbnQiOmZhbHNlLCJhdXRob3JJZCI6MTI0NjksImlhdCI6MTU5NjA5NzIzMn0.a8lZClW69fj53juqAW0NJ6uWh-1iOXiR-mn5pN3eATc)](https://www.deepcode.ai/app/gh/DeepCodeAI/java-client/_/dashboard?utm_content=gh%2FDeepCodeAI%2Fjava-client)
+
 For low level APIs look for `DeepCodeRestApi` public methods. For descriptions look [Rest APIs and CLI](https://deepcode.freshdesk.com/support/solutions/folders/60000321393)
 
 For high-level APIs look inside `ai.deepcode.javaclient.core` package.
