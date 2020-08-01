@@ -32,6 +32,7 @@ public abstract class RunUtilsBase {
   /**
    * Should NOT run another Background task with Progress re-usage from inside as Progress will be
    * removed from mapProject2Progresses after the end of this task.
+   *
    * Will try to re-use parent Progress if possible
    */
   public void runInBackground(
@@ -115,6 +116,7 @@ public abstract class RunUtilsBase {
   /**
    * Could run another Background task from inside as Progress is NOT removed from
    * mapProject2Progresses after the end of this task.
+   *
    * Will NOT re-use parent Progress.
    */
   public void runInBackgroundCancellable(
@@ -235,7 +237,7 @@ public abstract class RunUtilsBase {
 
     doBackgroundRun(
         project,
-        "Full Project re-Analysing",
+        "Full Project re-Analysing for " + pdUtils.getProjectName(project),
         (progress) -> {
           // To let new event cancel the currently running one
           Object prevProgressIndicator = mapProject2CancellableIndicator.put(project, progress);
@@ -289,12 +291,13 @@ public abstract class RunUtilsBase {
 
   // todo: replace it usage with doFullRescan as the latter is cancellable?
   public void asyncAnalyseProjectAndUpdatePanel(@Nullable Object project) {
-    final Object[] projects = (project == null) ? pdUtils.getOpenProjects() : new Object[] {project};
+    final Object[] projects =
+        (project == null) ? pdUtils.getOpenProjects() : new Object[] {project};
     for (Object prj : projects) {
       //    DumbService.getInstance(project).runWhenSmart(() ->
       runInBackground(
           prj,
-          "Analysing project...",
+          "Analysing project: " + pdUtils.getProjectName(prj),
           (progress) -> {
             updateCachedAnalysisResults(prj, null, progress);
           });

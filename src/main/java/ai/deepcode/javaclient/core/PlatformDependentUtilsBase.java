@@ -70,13 +70,13 @@ public abstract class PlatformDependentUtilsBase {
 
   public abstract void showInBrowser(@NotNull String url);
 
-  public abstract void showLoginLink(Object project, String message);
+  public abstract void showLoginLink(@Nullable Object project, String message);
 
   public abstract void showConsentRequest(Object project, boolean userActionNeeded);
 
-  public abstract void showInfo(String message, Object project);
+  public abstract void showInfo(String message, @Nullable Object project);
 
-  public abstract void showWarn(String message, Object project);
+  public abstract void showWarn(String message, @Nullable Object project);
 
-  public abstract void showError(String message, Object project);
+  public abstract void showError(String message, @Nullable Object project);
 }
