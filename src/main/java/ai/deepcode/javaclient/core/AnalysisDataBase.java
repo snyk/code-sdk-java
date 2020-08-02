@@ -696,7 +696,7 @@ public abstract class AnalysisDataBase {
         }
         mySuggestions.add(
             new SuggestionForFile(
-                suggestion.getId(), suggestion.getMessage(), suggestion.getSeverity(), ranges));
+                suggestion.getId(), suggestion.getRule(), suggestion.getMessage(), suggestion.getSeverity(), ranges));
       }
       result.put(file, mySuggestions);
     }

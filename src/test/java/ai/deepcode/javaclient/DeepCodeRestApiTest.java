@@ -24,11 +24,15 @@ import static org.junit.Assert.*;
 public class DeepCodeRestApiTest {
 
   private final String testFileContent =
-      "(function($) { \n"
-          + "    \n"
-          + "    var todos = storage.getTODOs(pullRequestJson).filter(function(todo) {}); \n"
-          + "    \n"
-          + "}(AJS.$));";
+      "public class AnnotatorTest {\n"
+          + "  public static void delay(long millis) {\n"
+          + "    try {\n"
+          + "      Thread.sleep(millis);\n"
+          + "    } catch (InterruptedException e) {\n"
+          + "      e.printStackTrace();\n"
+          + "    }\n"
+          + "  }\n"
+          + "}\n";
 
   // !!! Will works only with already logged sessionToken
   private static final String loggedToken =
@@ -136,7 +140,7 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
-    FileContent fileContent = new FileContent("/test.js", testFileContent);
+    FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
     CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
@@ -149,7 +153,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _031_createBundle_wrong_request() {
     System.out.println("\n--------------Create Bundle with wrong requests----------------\n");
-    FileContent fileContent = new FileContent("/test.js", testFileContent);
+    FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
     CreateBundleResponse response;
     final String brokenToken = "fff";
@@ -271,14 +275,14 @@ public class DeepCodeRestApiTest {
   private FileHashRequest createFileHashRequest(String fakeFileName) {
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
-    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile = new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     MessageDigest digest;
     String absolutePath = testFile.getAbsolutePath();
     String deepCodedPath =
         (absolutePath.startsWith("/") ? "" : "/")
             + ((fakeFileName == null)
                 ? absolutePath
-                : absolutePath.replace("test1.js", fakeFileName));
+                : absolutePath.replace("AnnotatorTest.java", fakeFileName));
     System.out.printf("\nFile: %1$s\n", deepCodedPath);
     System.out.println("-----------------");
 
@@ -384,7 +388,7 @@ public class DeepCodeRestApiTest {
 
   private EmptyResponse doUploadFile(
       CreateBundleResponse createBundleResponse, FileHashRequest fileHashRequest) {
-    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile = new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
