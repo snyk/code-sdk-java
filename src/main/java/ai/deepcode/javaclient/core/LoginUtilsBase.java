@@ -53,11 +53,15 @@ public abstract class LoginUtilsBase {
       dcLogger.logWarn("Login check fails: " + message + " Token: " + sessionToken);
     }
     if (!isLogged && userActionNeeded) {
-      if (sessionToken.isEmpty() && response.getStatusCode() == 401) {
+      if (response.getStatusCode() != 401) {
+        pdUtils.showError(message, project);
+      }
+      if (sessionToken.isEmpty()) {
         pdUtils.showLoginLink(
             project, "Authenticate using your GitHub, Bitbucket or GitLab account");
       } else {
-        pdUtils.showError(message, project);
+        pdUtils.showLoginLink(
+            project, "Invalid Token. Correct it or create a new one, please.");
       }
     }
     return isLogged;
