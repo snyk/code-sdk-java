@@ -653,8 +653,8 @@ public abstract class AnalysisDataBase {
     }
     for (Object file : files) {
       // fixme iterate over analysisResults.getFiles() to reduce empty passes
-      FileSuggestions fileSuggestions =
-          analysisResults.getFiles().get(pdUtils.getDeepCodedFilePath(file));
+      final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
+      FileSuggestions fileSuggestions = analysisResults.getFiles().get(deepCodedFilePath);
       if (fileSuggestions == null) {
         result.put(file, Collections.emptyList());
         continue;
@@ -684,13 +684,19 @@ public abstract class AnalysisDataBase {
           final int endRow = fileRange.getRows().get(1);
           final int startCol = fileRange.getCols().get(0) - 1; // inclusive
           final int endCol = fileRange.getCols().get(1);
+          if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
+            dcLogger.logWarn(
+                "Incorrect suggestion range: " + fileRange + "\nin file: " + deepCodedFilePath);
+            continue;
+          }
           final int lineStartOffset = pdUtils.getLineStartOffset(file, startRow - 1); // to 0-based
           final int lineEndOffset = pdUtils.getLineStartOffset(file, endRow - 1);
 
-          final Map<MyTextRange, List<MyTextRange>> markers = new LinkedHashMap<>(); // order should be preserved
+          final Map<MyTextRange, List<MyTextRange>> markers =
+              new LinkedHashMap<>(); // order should be preserved
           for (Marker marker : fileRange.getMarkers()) {
             final MyTextRange msgRange =
-                     new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
+                new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
             final List<MyTextRange> positions =
                 marker.getPos().stream()
                     .map(
