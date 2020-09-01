@@ -677,6 +677,7 @@ public abstract class AnalysisDataBase {
                   + response);
           return EMPTY_MAP;
         }
+
         final List<MyTextRange> ranges = new ArrayList<>();
         for (FileRange fileRange : fileSuggestions.get(suggestionIndex)) {
           final int startRow = fileRange.getRows().get(0);
@@ -685,6 +686,35 @@ public abstract class AnalysisDataBase {
           final int endCol = fileRange.getCols().get(1);
           final int lineStartOffset = pdUtils.getLineStartOffset(file, startRow - 1); // to 0-based
           final int lineEndOffset = pdUtils.getLineStartOffset(file, endRow - 1);
+
+          final Map<MyTextRange, List<MyTextRange>> markers = new LinkedHashMap<>(); // order should be preserved
+          for (Marker marker : fileRange.getMarkers()) {
+            final MyTextRange msgRange =
+                     new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
+            final List<MyTextRange> positions =
+                marker.getPos().stream()
+                    .map(
+                        it -> {
+                          final int mStartRow = it.getRows().get(0);
+                          final int mEndRow = it.getRows().get(1);
+                          final int mStartCol = it.getCols().get(0) - 1; // inclusive
+                          final int mEndCol = it.getCols().get(1);
+                          final int mLineStartOffset =
+                              pdUtils.getLineStartOffset(file, mStartRow - 1); // to 0-based
+                          final int mLineEndOffset = pdUtils.getLineStartOffset(file, mEndRow - 1);
+                          return new MyTextRange(
+                              mLineStartOffset + mStartCol,
+                              mLineEndOffset + mEndCol,
+                              mStartRow,
+                              mEndRow,
+                              mStartCol,
+                              mEndCol,
+                              Collections.emptyMap());
+                        })
+                    .collect(Collectors.toList());
+            markers.put(msgRange, positions);
+          }
+
           ranges.add(
               new MyTextRange(
                   lineStartOffset + startCol,
@@ -692,11 +722,17 @@ public abstract class AnalysisDataBase {
                   startRow,
                   endRow,
                   startCol,
-                  endCol));
+                  endCol,
+                  markers));
         }
+
         mySuggestions.add(
             new SuggestionForFile(
-                suggestion.getId(), suggestion.getRule(), suggestion.getMessage(), suggestion.getSeverity(), ranges));
+                suggestion.getId(),
+                suggestion.getRule(),
+                suggestion.getMessage(),
+                suggestion.getSeverity(),
+                ranges));
       }
       result.put(file, mySuggestions);
     }
