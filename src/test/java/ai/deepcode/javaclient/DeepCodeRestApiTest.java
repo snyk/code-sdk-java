@@ -35,10 +35,8 @@ public class DeepCodeRestApiTest {
           + "}\n";
 
   // !!! Will works only with already logged sessionToken
-  private static final String loggedToken =
-      "7803ae6756d34b5cec056616fd59f4d6e499fce7fc3ce6db5cfd07f6e893e23a";
-  private final String deepcodedLoggedToken =
-      "3323bb63463aed49e194fcfe5455da9f338763ef2d8a6e2516ab5c81a184fa93";
+  private static final String loggedToken = System.getenv("deepcode.ai_token");
+  private final String deepcodedLoggedToken = System.getenv("deepcoded.com_token");
 
   private static String bundleId = null;
 
