@@ -24,23 +24,21 @@ import static org.junit.Assert.*;
 public class DeepCodeRestApiTest {
 
   private final String testFileContent =
-      "(function($) { \n"
-          + "    \n"
-          + "    var todos = storage.getTODOs(pullRequestJson).filter(function(todo) {}); \n"
-          + "    \n"
-          + "}(AJS.$));";
+      "public class AnnotatorTest {\n"
+          + "  public static void delay(long millis) {\n"
+          + "    try {\n"
+          + "      Thread.sleep(millis);\n"
+          + "    } catch (InterruptedException e) {\n"
+          + "      e.printStackTrace();\n"
+          + "    }\n"
+          + "  }\n"
+          + "}\n";
 
   // !!! Will works only with already logged sessionToken
-  private static final String loggedToken =
-      "aeedc7d1c2656ea4b0adb1e215999f588b457cedf415c832a0209c9429c7636e";
-  private final String secondLoggedToken =
-      "c6ea36d5f67534826d9cd875ae3d7f2257ac59f74230d4c8bae4490c5cd66fe4";
-  private final String deepcodedLoggedToken =
-      "4df67e37cea75a4314399c6fb0e83c680f457448d13a45225e2beb3c24f0856c";
+  private static final String loggedToken = System.getenv("DEEPCODE_API_KEY");
+  private final String deepcodedLoggedToken = System.getenv("DEEPCODE_API_KEY_STAGING");
 
-  // !!! Will works only for bundleId with already loaded file!!!
-  private static final String bundleId =
-      "gh/ArtsiomCh/DEEPCODE_PRIVATE_BUNDLE/83a47f630d9ad28bda6cbb068317565dce5fadce4d71f754e9a99794f2e4fb15";
+  private static String bundleId = null;
 
   private static String userAgent = "Java-client-Test";
 
@@ -124,7 +122,7 @@ public class DeepCodeRestApiTest {
             + "] "
             + response.getStatusDescription()
             + "\n";
-    assertEquals(errorMsg, response.getStatusCode(), 200);
+    assertEquals(errorMsg, 200, response.getStatusCode());
 
     System.out.printf(
         "Get Filters call returns next filters: \nextensions: %1$s \nconfigFiles: %2$s\n",
@@ -136,7 +134,7 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
-    FileContent fileContent = new FileContent("/test.js", testFileContent);
+    FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
     CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
@@ -144,12 +142,13 @@ public class DeepCodeRestApiTest {
         "Create Bundle call return:\nStatus code [%1$d] %3$s \nBundleId: [%2$s]\n",
         response.getStatusCode(), response.getBundleId(), response.getStatusDescription());
     assertEquals(200, response.getStatusCode());
+    bundleId = response.getBundleId();
   }
 
   @Test
   public void _031_createBundle_wrong_request() {
     System.out.println("\n--------------Create Bundle with wrong requests----------------\n");
-    FileContent fileContent = new FileContent("/test.js", testFileContent);
+    FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
     FileContentRequest files = new FileContentRequest(Collections.singletonList(fileContent));
     CreateBundleResponse response;
     final String brokenToken = "fff";
@@ -271,14 +270,15 @@ public class DeepCodeRestApiTest {
   private FileHashRequest createFileHashRequest(String fakeFileName) {
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
-    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile =
+        new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     MessageDigest digest;
     String absolutePath = testFile.getAbsolutePath();
     String deepCodedPath =
         (absolutePath.startsWith("/") ? "" : "/")
             + ((fakeFileName == null)
                 ? absolutePath
-                : absolutePath.replace("test1.js", fakeFileName));
+                : absolutePath.replace("AnnotatorTest.java", fakeFileName));
     System.out.printf("\nFile: %1$s\n", deepCodedPath);
     System.out.println("-----------------");
 
@@ -384,7 +384,8 @@ public class DeepCodeRestApiTest {
 
   private EmptyResponse doUploadFile(
       CreateBundleResponse createBundleResponse, FileHashRequest fileHashRequest) {
-    final File testFile = new File(getClass().getClassLoader().getResource("test1.js").getFile());
+    final File testFile =
+        new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
@@ -405,19 +406,22 @@ public class DeepCodeRestApiTest {
   @Test
   public void _090_getAnalysis() {
     System.out.println("\n--------------Get Analysis----------------\n");
+    assertNotNull(
+        "`bundleId` should be initialized at `_030_createBundle_from_source()`", bundleId);
     assertAndPrintGetAnalysisResponse(
         DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false));
     System.out.println("\n---- With `Linters` param:\n");
     assertAndPrintGetAnalysisResponse(
         DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true));
     System.out.println("\n---- With `severity=2` param:\n");
-    assertAndPrintGetAnalysisResponse(DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false));
+    assertAndPrintGetAnalysisResponse(
+            DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false));
   }
 
   private void assertAndPrintGetAnalysisResponse(GetAnalysisResponse response) {
     assertNotNull(response);
     System.out.printf(
-        "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s with Body: %3$s\n",
+        "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s \n%3$s\n",
         testFileContent, response.getStatusCode(), response);
     //    assertEquals("DONE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());

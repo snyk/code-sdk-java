@@ -80,12 +80,18 @@ public abstract class HashContentUtilsBase {
     return bytesToHex(encodedHash);
   }
 
+  /**
+   * Look for cached content first, require manual cache invalidation if file been changed
+   */
   @NotNull
-  String getFileContent(@NotNull Object file) {
+  public String getFileContent(@NotNull Object file) {
     // potential OutOfMemoryException for too large projects
     return mapFile2Content.computeIfAbsent(file, this::doGetFileContent);
   }
 
+  /**
+   * Make direct read of File content. NO cache check.
+   */
   @NotNull
   public abstract String doGetFileContent(@NotNull Object file);
 

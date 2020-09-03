@@ -6,6 +6,9 @@ import ai.deepcode.javaclient.responses.LoginResponse;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class LoginUtilsBase {
 
   private final PlatformDependentUtilsBase pdUtils;
@@ -26,12 +29,21 @@ public abstract class LoginUtilsBase {
 
   protected abstract String getUserAgent();
 
-  private static boolean isLoginCheckLoopStarted = false;
+  private static final Set<Object> PROJECTS_WITH_LOGIN_CHECK_LOOP_STARTED = new HashSet<>();
+
+  /** inner network request! */
+  public boolean isLogged(@Nullable Object project, boolean userActionNeeded) {
+    boolean isLogged = checkLogin(project, userActionNeeded);
+    if (isLogged && project != null) {
+      isLogged = checkConsent(project, userActionNeeded);
+    }
+    return isLogged;
+  }
 
   /** network request! */
-  public boolean isLogged(@Nullable Object project, boolean userActionNeeded) {
+  public boolean checkLogin(@Nullable Object project, boolean userActionNeeded) {
     final String sessionToken = deepCodeParams.getSessionToken();
-    pdUtils.progressCheckCanceled();
+    // pdUtils.progressCheckCanceled();
     final EmptyResponse response = DeepCodeRestApi.checkSession(sessionToken);
     boolean isLogged = response.getStatusCode() == 200;
     String message = response.getStatusDescription();
@@ -41,24 +53,35 @@ public abstract class LoginUtilsBase {
       dcLogger.logWarn("Login check fails: " + message + " Token: " + sessionToken);
     }
     if (!isLogged && userActionNeeded) {
-      if (sessionToken.isEmpty() && response.getStatusCode() == 401) {
-        message = "Authenticate using your GitHub, Bitbucket or GitLab account";
+      if (response.getStatusCode() != 401) {
+        pdUtils.showError(message, project);
       }
-      pdUtils.showLoginLink(project, message);
-    } else if (isLogged && project != null) {
-      if (deepCodeParams.consentGiven(project)) {
-        dcLogger.logInfo("Consent check succeed for: " + pdUtils.getProjectName(project));
+      if (sessionToken.isEmpty()) {
+        pdUtils.showLoginLink(
+            project, "Authenticate using your GitHub, Bitbucket or GitLab account");
       } else {
-        dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
-        isLogged = false;
-        pdUtils.showConsentRequest(project, userActionNeeded);
+        pdUtils.showLoginLink(
+            project, "Invalid Token. Correct it or create a new one, please.");
       }
     }
     return isLogged;
   }
 
+  public boolean checkConsent(@NotNull Object project, boolean userActionNeeded) {
+    final boolean consentGiven = deepCodeParams.consentGiven(project);
+    if (consentGiven) {
+      dcLogger.logInfo("Consent check succeed for: " + pdUtils.getProjectName(project));
+    } else {
+      dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
+      if (userActionNeeded) {
+        pdUtils.showConsentRequest(project, userActionNeeded);
+      }
+    }
+    return consentGiven;
+  }
+
   /** network request! */
-  public void requestNewLogin(@NotNull Object project, boolean openBrowser) {
+  public void requestNewLogin(@Nullable Object project, boolean openBrowser) {
     dcLogger.logInfo("New Login requested.");
     deepCodeParams.clearLoginParams();
     LoginResponse response = DeepCodeRestApi.newLogin(getUserAgent());
@@ -70,11 +93,15 @@ public abstract class LoginUtilsBase {
         pdUtils.showInBrowser(deepCodeParams.getLoginUrl());
         // BrowserUtil.open(DeepCodeParams.getInstance().getLoginUrl());
       }
-      if (!isLoginCheckLoopStarted) {
-        pdUtils.runInBackground(project, () -> startLoginCheckLoop(project));
-        //        ReadAction.nonBlocking(() -> startLoginCheckLoop(project))
-        //            .submit(NonUrgentExecutor.getInstance());
-        dcLogger.logInfo("LoginCheckLoop started");
+      // all projects should be re-scanned
+      for (Object prj : pdUtils.getOpenProjects()) {
+        if (PROJECTS_WITH_LOGIN_CHECK_LOOP_STARTED.add(prj)) {
+          pdUtils.runInBackground(
+              prj,
+              "Waiting Login for " + pdUtils.getProjectName(prj),
+              (progress) -> startLoginCheckLoop(prj, progress));
+          dcLogger.logInfo("LoginCheckLoop started for " + pdUtils.getProjectName(prj));
+        }
       }
     } else {
       dcLogger.logWarn("New Login request fail: " + response.getStatusDescription());
@@ -82,19 +109,20 @@ public abstract class LoginUtilsBase {
     }
   }
 
-  private void startLoginCheckLoop(@NotNull Object project) {
-    isLoginCheckLoopStarted = true;
+  private void startLoginCheckLoop(@NotNull Object project, @NotNull Object progress) {
     try {
       do {
-        pdUtils.delay(pdUtils.DEFAULT_DELAY);
-      } while (!isLogged(project, false));
+        pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
+      } while (!checkLogin(project, false));
     } finally {
-      isLoginCheckLoopStarted = false;
+      PROJECTS_WITH_LOGIN_CHECK_LOOP_STARTED.remove(project);
       dcLogger.logInfo("LoginCheckLoop finished for project: " + pdUtils.getProjectName(project));
     }
-    pdUtils.showInfo("Login succeed", project);
+    // pdUtils.showInfo("Login succeed", project);
     analysisData.resetCachesAndTasks(project); // do we need it??
-    pdUtils.doFullRescan(project);
+    if (checkConsent(project, true)) {
+      pdUtils.doFullRescan(project);
+    }
     //    AnalysisData.getInstance().resetCachesAndTasks(project);
     //    RunUtils.asyncAnalyseProjectAndUpdatePanel(project);
   }
