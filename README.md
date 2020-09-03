@@ -21,8 +21,8 @@ To make a standalone jar file with all dependencies use `shadowJar` gradle task.
 
 - 2 environment variables with __already logged__ Tokens need to be declared:
 
-`deepcode.ai_token` - logged at https://www.deepcode.ai Token 
+`DEEPCODE_API_KEY` - logged at https://www.deepcode.ai Token 
 
-`deepcoded.com_token` - logged at https://www.deepcoded.com Token
+`DEEPCODE_API_KEY_STAGING` - logged at https://www.deepcoded.com Token
 
 - Run gradle test task: `source gradlew test --stacktrace --scan`
