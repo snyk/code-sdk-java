@@ -283,10 +283,8 @@ public class DeepCodeRestApiTest {
     System.out.println("-----------------");
 
     // Append with System.currentTimeMillis() to make new Hash.
-    try {
-      FileOutputStream fos = new FileOutputStream(absolutePath, true);
+    try (FileOutputStream fos = new FileOutputStream(absolutePath, true)) {
       fos.write(String.valueOf(System.currentTimeMillis()).getBytes());
-      fos.close();
     } catch (IOException e) {
       System.out.println(e.getMessage());
     }

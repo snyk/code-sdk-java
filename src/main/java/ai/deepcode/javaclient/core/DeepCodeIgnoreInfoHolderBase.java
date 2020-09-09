@@ -83,11 +83,12 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
       line = line.trim();
       if (line.isEmpty() || line.startsWith("#")) continue;
 
-      String prefix = basePath + "/";
+      String prefix = basePath;
       // If there is a separator at the beginning or middle (or both) of the pattern, then the
       // pattern is relative to the directory level of the particular .gitignore file itself.
       // Otherwise the pattern may also match at any level below the .gitignore level.
       int indexBegMidSepar = line.substring(0, line.length() - 1).indexOf('/');
+      if (indexBegMidSepar != 0) prefix += "/";
       if (indexBegMidSepar == -1) {
         prefix += ".*";
       } else if (line.endsWith("/*") || line.endsWith("/**")) {
@@ -100,7 +101,7 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
       String postfix =
           (line.endsWith("/"))
               ? ".+" // should be dir
-              : ".*"; // could be dir or file
+              : "(/.+)?"; // could be dir or file
 
       String body =
           line.replace(".", "\\.")

@@ -1,3 +1,6 @@
+## [2.0.15] - 2020-09-08
+- fix .ignore files parsing
+
 ## [2.0.0] - 2020-06-20
 - Common logic moved to java-client from jetbrains-plugin
 
