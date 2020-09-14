@@ -34,6 +34,7 @@ public abstract class DeepCodeUtilsBase {
     if (allProjectFiles.isEmpty()) {
       dcLogger.logWarn("Empty files list for project: " + project);
     }
+    ignoreInfoHolder.removeProject(project);
     // Initial scan for .dcignore files
     allProjectFiles.stream()
         .filter(ignoreInfoHolder::is_dcignoreFile)

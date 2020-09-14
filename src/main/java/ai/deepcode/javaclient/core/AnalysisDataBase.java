@@ -139,23 +139,32 @@ public abstract class AnalysisDataBase {
         .collect(Collectors.toList());
   }
 
-  private static boolean updateInProgress = true;
+  private static final Set<Object> updateInProgress = Collections.synchronizedSet(new HashSet<>());
 
-  public void setUpdateInProgress() {
-    updateInProgress = true;
+  public void setUpdateInProgress(@NotNull Object project) {
+    synchronized (updateInProgress) {
+      updateInProgress.add(project);
+    }
   }
 
-  public boolean isUpdateAnalysisInProgress() {
-    return updateInProgress;
+  public void unsetUpdateInProgress(@NotNull Object project) {
+    synchronized (updateInProgress) {
+      updateInProgress.remove(project);
+    }
   }
 
-  public boolean isAnalysisResultsNOTAvailable(@NotNull Object project) {
-    final boolean projectWasNotAnalysed = !getAllCachedProject().contains(project);
-    return projectWasNotAnalysed || isUpdateAnalysisInProgress();
+  public boolean isUpdateAnalysisInProgress(@NotNull Object project) {
+    synchronized (updateInProgress) {
+      return updateInProgress.contains(project);
+    }
   }
 
-  public void waitForUpdateAnalysisFinish(@Nullable Object progress) {
-    while (updateInProgress) {
+  public boolean isProjectNOTAnalysed(@NotNull Object project) {
+    return !getAllCachedProject().contains(project);
+  }
+
+  public void waitForUpdateAnalysisFinish(@NotNull Object project, @Nullable Object progress) {
+    while (isUpdateAnalysisInProgress(project)) {
       // delay should be less or equal to runInBackgroundCancellable delay
       pdUtils.delay(pdUtils.DEFAULT_DELAY_SMALL, progress);
     }
@@ -184,7 +193,7 @@ public abstract class AnalysisDataBase {
     try {
       MUTEX.lock();
       dcLogger.logInfo("MUTEX LOCK");
-      updateInProgress = true;
+      setUpdateInProgress(project);
       Collection<Object> filesToProceed =
           psiFiles.stream()
               .filter(Objects::nonNull)
@@ -225,7 +234,7 @@ public abstract class AnalysisDataBase {
         dcLogger.logWarn(
             "Nothing to update for " + psiFiles.size() + " files: " + psiFiles.toString());
       }
-      updateInProgress = false;
+      unsetUpdateInProgress(project);
       pdUtils.refreshPanel(project);
       // ServiceManager.getService(project, myTodoView.class).refresh();
     } finally {

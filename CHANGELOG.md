@@ -1,3 +1,6 @@
+## [2.0.16] - 2020-09-08
+- fix inner caches cleanup; update modes compatibility. 
+
 ## [2.0.15] - 2020-09-08
 - fix .ignore files parsing
 

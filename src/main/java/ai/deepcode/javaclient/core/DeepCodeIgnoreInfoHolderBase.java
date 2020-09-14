@@ -61,6 +61,17 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
     map_gitignore2Regexps.remove(file);
   }
 
+  public void removeProject(@NotNull Object project) {
+    map_dcignore2Regexps.forEach((file, _set) -> {
+      if (getProjectOfFile(file).equals(project)) map_dcignore2Regexps.remove(file);
+    });
+    map_gitignore2Regexps.forEach((file, _set) -> {
+      if (getProjectOfFile(file).equals(project)) map_gitignore2Regexps.remove(file);
+    });
+  }
+
+  protected abstract Object getProjectOfFile(@NotNull Object file);
+
   public void update_dcignoreFileContent(@NotNull Object file) {
     map_dcignore2Regexps.put(file, parse_ignoreFile2Regexps(file));
   }
