@@ -141,9 +141,8 @@ public abstract class RunUtilsBase {
             + " with progressConsumer "
             + runId);
 
-    analysisData.setUpdateInProgress();
-
     final Object project = pdUtils.getProject(file);
+    analysisData.setUpdateInProgress(project);
 
     doBackgroundRun(
         project,
