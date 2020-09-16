@@ -33,7 +33,7 @@ public abstract class RunUtilsBase {
    * Should NOT run another Background task with Progress re-usage from inside as Progress will be
    * removed from mapProject2Progresses after the end of this task.
    *
-   * Will try to re-use parent Progress if possible
+   * <p>Will try to re-use parent Progress if possible
    */
   public void runInBackground(
       @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
@@ -117,7 +117,7 @@ public abstract class RunUtilsBase {
    * Could run another Background task from inside as Progress is NOT removed from
    * mapProject2Progresses after the end of this task.
    *
-   * Will NOT re-use parent Progress.
+   * <p>Will NOT re-use parent Progress.
    */
   public void runInBackgroundCancellable(
       @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
@@ -288,18 +288,14 @@ public abstract class RunUtilsBase {
         });
   }
 
-  // todo: replace it usage with doFullRescan as the latter is cancellable?
   public void asyncAnalyseProjectAndUpdatePanel(@Nullable Object project) {
     final Object[] projects =
         (project == null) ? pdUtils.getOpenProjects() : new Object[] {project};
     for (Object prj : projects) {
-      //    DumbService.getInstance(project).runWhenSmart(() ->
-      runInBackground(
-          prj,
-          "Analysing project: " + pdUtils.getProjectName(prj),
-          (progress) -> {
-            updateCachedAnalysisResults(prj, null, progress);
-          });
+      if (!isFullRescanRequested(prj)) {
+        rescanInBackgroundCancellableDelayed(
+            prj, PlatformDependentUtilsBase.DEFAULT_DELAY_SMALL, false);
+      }
     }
   }
 

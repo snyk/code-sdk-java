@@ -2,7 +2,7 @@ package ai.deepcode.javaclient.responses;
 
 import java.util.List;
 
-public class FileRange {
+public class FileRange implements Position {
 
   private List<Integer> rows = null;
   private List<Integer> cols = null;
@@ -15,10 +15,12 @@ public class FileRange {
     this.markers = markers;
   }
 
+  @Override
   public List<Integer> getRows() {
     return rows;
   }
 
+  @Override
   public List<Integer> getCols() {
     return cols;
   }
@@ -29,6 +31,6 @@ public class FileRange {
 
   @Override
   public String toString() {
-    return " rows: " + rows + " cols: " + cols + " markers: " + markers;
+    return super.toString() + " markers: " + markers;
   }
 }

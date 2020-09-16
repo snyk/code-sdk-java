@@ -2,7 +2,7 @@ package ai.deepcode.javaclient.responses;
 
 import java.util.List;
 
-public class MarkerPosition {
+public class MarkerPosition implements Position {
 
   private List<Integer> rows = null;
   private List<Integer> cols = null;
@@ -13,10 +13,12 @@ public class MarkerPosition {
     this.cols = cols;
   }
 
+  @Override
   public List<Integer> getRows() {
     return rows;
   }
 
+  @Override
   public List<Integer> getCols() {
     return cols;
   }
