@@ -689,17 +689,6 @@ public abstract class AnalysisDataBase {
 
         final List<MyTextRange> ranges = new ArrayList<>();
         for (FileRange fileRange : fileSuggestions.get(suggestionIndex)) {
-          final int startRow = fileRange.getRows().get(0);
-          final int endRow = fileRange.getRows().get(1);
-          final int startCol = fileRange.getCols().get(0) - 1; // inclusive
-          final int endCol = fileRange.getCols().get(1);
-          if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
-            dcLogger.logWarn(
-                "Incorrect suggestion range: " + fileRange + "\nin file: " + deepCodedFilePath);
-            continue;
-          }
-          final int lineStartOffset = pdUtils.getLineStartOffset(file, startRow - 1); // to 0-based
-          final int lineEndOffset = pdUtils.getLineStartOffset(file, endRow - 1);
 
           final Map<MyTextRange, List<MyTextRange>> markers =
               new LinkedHashMap<>(); // order should be preserved
@@ -708,37 +697,12 @@ public abstract class AnalysisDataBase {
                 new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
             final List<MyTextRange> positions =
                 marker.getPos().stream()
-                    .map(
-                        it -> {
-                          final int mStartRow = it.getRows().get(0);
-                          final int mEndRow = it.getRows().get(1);
-                          final int mStartCol = it.getCols().get(0) - 1; // inclusive
-                          final int mEndCol = it.getCols().get(1);
-                          final int mLineStartOffset =
-                              pdUtils.getLineStartOffset(file, mStartRow - 1); // to 0-based
-                          final int mLineEndOffset = pdUtils.getLineStartOffset(file, mEndRow - 1);
-                          return new MyTextRange(
-                              mLineStartOffset + mStartCol,
-                              mLineEndOffset + mEndCol,
-                              mStartRow,
-                              mEndRow,
-                              mStartCol,
-                              mEndCol,
-                              Collections.emptyMap());
-                        })
+                    .map(it -> parsePosition2MyTextRange(it, file, Collections.emptyMap()))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             markers.put(msgRange, positions);
           }
-
-          ranges.add(
-              new MyTextRange(
-                  lineStartOffset + startCol,
-                  lineEndOffset + endCol,
-                  startRow,
-                  endRow,
-                  startCol,
-                  endCol,
-                  markers));
+          ranges.add(parsePosition2MyTextRange(fileRange, file, markers));
         }
 
         mySuggestions.add(
@@ -752,6 +716,37 @@ public abstract class AnalysisDataBase {
       result.put(file, mySuggestions);
     }
     return result;
+  }
+
+  @Nullable
+  private MyTextRange parsePosition2MyTextRange(
+      @NotNull final Position position,
+      @NotNull final Object file,
+      @NotNull final Map<MyTextRange, List<MyTextRange>> markers) {
+
+    final int startRow = position.getRows().get(0);
+    final int endRow = position.getRows().get(1);
+    final int startCol = position.getCols().get(0) - 1; // inclusive
+    final int endCol = position.getCols().get(1);
+
+    if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
+      final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
+      dcLogger.logWarn(
+          "Incorrect suggestion/marker range: " + position + "\nin file: " + deepCodedFilePath);
+      return null;
+    }
+
+    final int mLineStartOffset = pdUtils.getLineStartOffset(file, startRow - 1); // to 0-based
+    final int mLineEndOffset = pdUtils.getLineStartOffset(file, endRow - 1);
+
+    return new MyTextRange(
+        mLineStartOffset + startCol,
+        mLineEndOffset + endCol,
+        startRow,
+        endRow,
+        startCol,
+        endCol,
+        markers);
   }
 
   private FileContent createFileContent(Object file) {
