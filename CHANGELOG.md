@@ -1,3 +1,6 @@
+## [2.0.18] - 2020-10-05
+- fix exception when Null markers received. 
+
 ## [2.0.16] - 2020-09-08
 - fix inner caches cleanup; update modes compatibility. 
 

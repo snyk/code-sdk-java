@@ -4,8 +4,8 @@ import java.util.List;
 
 public class MarkerPosition implements Position {
 
-  private List<Integer> rows = null;
-  private List<Integer> cols = null;
+  private List<Integer> rows;
+  private List<Integer> cols;
 
   public MarkerPosition(List<Integer> rows, List<Integer> cols) {
     super();
@@ -25,6 +25,6 @@ public class MarkerPosition implements Position {
 
   @Override
   public String toString() {
-    return " rows: " + rows + " cols: " + cols;
+    return "marker range:  rows: " + rows + " cols: " + cols;
   }
 }
