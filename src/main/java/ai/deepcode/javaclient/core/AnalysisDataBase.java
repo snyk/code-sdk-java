@@ -688,11 +688,11 @@ public abstract class AnalysisDataBase {
         }
 
         final List<MyTextRange> ranges = new ArrayList<>();
-        for (FileRange fileRange : fileSuggestions.get(suggestionIndex)) {
+        for (FilePosition filePosition : fileSuggestions.get(suggestionIndex)) {
 
           final Map<MyTextRange, List<MyTextRange>> markers =
               new LinkedHashMap<>(); // order should be preserved
-          for (Marker marker : fileRange.getMarkers()) {
+          for (Marker marker : filePosition.getMarkers()) {
             final MyTextRange msgRange =
                 new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
             final List<MyTextRange> positions =
@@ -702,7 +702,8 @@ public abstract class AnalysisDataBase {
                     .collect(Collectors.toList());
             markers.put(msgRange, positions);
           }
-          ranges.add(parsePosition2MyTextRange(fileRange, file, markers));
+          final MyTextRange suggestionRange = parsePosition2MyTextRange(filePosition, file, markers);
+          if (suggestionRange != null) ranges.add(suggestionRange);
         }
 
         mySuggestions.add(
@@ -732,7 +733,7 @@ public abstract class AnalysisDataBase {
     if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
       final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
       dcLogger.logWarn(
-          "Incorrect suggestion/marker range: " + position + "\nin file: " + deepCodedFilePath);
+          "Incorrect " + position + "\nin file: " + deepCodedFilePath);
       return null;
     }
 
