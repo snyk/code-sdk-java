@@ -11,16 +11,22 @@ public abstract class DCLoggerBase {
   private final Supplier<Consumer<String>> warnFunctionSupplier;
   private final Supplier<Boolean> isInfoEnabledSupplier;
   private final Supplier<Boolean> isWarnEnabledSupplier;
+  private final String packageName;
+  public final String presentableName;
 
   protected DCLoggerBase(
       Supplier<Consumer<String>> infoFunctionSupplier,
       Supplier<Consumer<String>> warnFunctionSupplier,
       Supplier<Boolean> isInfoEnabledSupplier,
-      Supplier<Boolean> isWarnEnabledSupplier) {
+      Supplier<Boolean> isWarnEnabledSupplier,
+      String packageName,
+      String presentableName) {
     this.infoFunctionSupplier = infoFunctionSupplier;
     this.warnFunctionSupplier = warnFunctionSupplier;
     this.isInfoEnabledSupplier = isInfoEnabledSupplier;
     this.isWarnEnabledSupplier = isWarnEnabledSupplier;
+    this.packageName = packageName;
+    this.presentableName = presentableName;
   }
 
   protected static final SimpleDateFormat HMSS = new SimpleDateFormat("H:mm:ss,S");
@@ -62,16 +68,17 @@ public abstract class DCLoggerBase {
     }
   }
 
-  private static String getMyClassesStacktrace() {
+  private String getMyClassesStacktrace() {
     StringJoiner joiner = new StringJoiner(" -> ");
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
     for (int i = stackTrace.length - 1; // show in backward order
         i > 3; // to skip infoFunctionSupplier.get() -> logInfo/ warnInfo -> getMyClassesStacktrace
         i--) {
       StackTraceElement ste = stackTrace[i];
-      if (ste.getClassName().contains("ai.deepcode")) {
+      final String className = ste.getClassName();
+      if (className.contains("ai.deepcode") || className.contains(packageName)) {
         String s =
-            ste.getClassName().substring(ste.getClassName().lastIndexOf('.') + 1)
+            className.substring(className.lastIndexOf('.') + 1)
                 + "."
                 + ste.getMethodName()
                 + ":"

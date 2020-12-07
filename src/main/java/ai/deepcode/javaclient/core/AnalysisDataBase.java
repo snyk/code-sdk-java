@@ -27,14 +27,15 @@ public abstract class AnalysisDataBase {
     this.hashContentUtils = hashContentUtils;
     this.deepCodeParams = deepCodeParams;
     this.dcLogger = dcLogger;
+    UPLOADING_FILES_TEXT = dcLogger.presentableName + ": Uploading files to the server... ";
+    PREPARE_FILES_TEXT = dcLogger.presentableName + ": Preparing files for upload... ";
+    WAITING_FOR_ANALYSIS_TEXT = dcLogger.presentableName + ": Waiting for analysis from server... ";
   }
 
-  private static final String UPLOADING_FILES_TEXT = "DeepCode: Uploading files to the server... ";
-  private static final String PREPARE_FILES_TEXT = "DeepCode: Preparing files for upload... ";
-  private static final String WAITING_FOR_ANALYSIS_TEXT =
-      "DeepCode: Waiting for analysis from server... ";
+  private final String UPLOADING_FILES_TEXT;
+  private final String PREPARE_FILES_TEXT;
+  private final String WAITING_FOR_ANALYSIS_TEXT;
 
-  //  private static final Logger LOG = LoggerFactory.getLogger("DeepCode.AnalysisData");
   private static final Map<Object, List<SuggestionForFile>> EMPTY_MAP = Collections.emptyMap();
   private static final Map<Object, String> mapProject2analysisUrl = new ConcurrentHashMap<>();
 
@@ -712,6 +713,8 @@ public abstract class AnalysisDataBase {
                 suggestion.getRule(),
                 suggestion.getMessage(),
                 suggestion.getSeverity(),
+                suggestion.getRepoDatasetSize(),
+                suggestion.getExampleCommitFixes(),
                 ranges));
       }
       result.put(file, mySuggestions);
