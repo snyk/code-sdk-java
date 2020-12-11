@@ -10,15 +10,61 @@ plugins {
     // Apply the java-library plugin to add support for Java Library
     id 'java-library'
     id "com.github.johnrengelman.shadow" version "5.2.0"
+    id("maven-publish")
+    id "com.jfrog.bintray" version "1.8.5"
+}
+
+def pluginVersion = '2.1.2-dev2'
+
+publishing {
+/*
+    repositories {
+        maven {
+            name = "JavaClient"
+            url = uri("https://maven.pkg.github.com/artsiomch/java-client-dev")
+            credentials {
+                username = System.getenv("githubUsername")
+                password = System.getenv("githubToken")
+            }
+        }
+    }
+*/
+    publications {
+        maven(MavenPublication) {
+            //artifact(shadowJar)
+            groupId = 'ai.deepcode'
+            artifactId = 'java-client'
+            version = pluginVersion
+            from(components.java)
+        }
+    }
+}
+
+bintray {
+    user = System.getenv('bintrayUser')
+    key = System.getenv('bintrayKey')
+    publications = ['maven']
+
+    pkg {
+        repo = 'maven-releases'
+        name = 'java-client'
+        userOrg = 'artsiomch'
+        version {
+            name = pluginVersion
+            released  = new Date()
+        }
+    }
+}
+
+java {
+    withSourcesJar()
 }
 
 repositories {
-    // Use jcenter for resolving dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     jcenter()
 }
 
-version '2.1.2'
+version = pluginVersion
 sourceCompatibility = 1.8
 
 dependencies {
