@@ -703,7 +703,8 @@ public abstract class AnalysisDataBase {
                     .collect(Collectors.toList());
             markers.put(msgRange, positions);
           }
-          final MyTextRange suggestionRange = parsePosition2MyTextRange(filePosition, file, markers);
+          final MyTextRange suggestionRange =
+              parsePosition2MyTextRange(filePosition, file, markers);
           if (suggestionRange != null) ranges.add(suggestionRange);
         }
 
@@ -712,10 +713,16 @@ public abstract class AnalysisDataBase {
                 suggestion.getId(),
                 suggestion.getRule(),
                 suggestion.getMessage(),
+                suggestion.getTitle(),
+                suggestion.getText(),
                 suggestion.getSeverity(),
                 suggestion.getRepoDatasetSize(),
+                suggestion.getExampleCommitDescriptions(),
                 suggestion.getExampleCommitFixes(),
-                ranges));
+                ranges,
+                suggestion.getCategories(),
+                suggestion.getTags(),
+                suggestion.getCwe()));
       }
       result.put(file, mySuggestions);
     }
@@ -735,8 +742,7 @@ public abstract class AnalysisDataBase {
 
     if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
       final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
-      dcLogger.logWarn(
-          "Incorrect " + position + "\nin file: " + deepCodedFilePath);
+      dcLogger.logWarn("Incorrect " + position + "\nin file: " + deepCodedFilePath);
       return null;
     }
 
