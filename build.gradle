@@ -16,6 +16,11 @@ version = "2.1.4"
 
 sourceCompatibility = 11
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 sourceSets {
     integTest {
         compileClasspath += sourceSets.main.output
