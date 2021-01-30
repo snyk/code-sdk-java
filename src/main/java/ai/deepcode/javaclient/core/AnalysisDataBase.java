@@ -235,13 +235,13 @@ public abstract class AnalysisDataBase {
         dcLogger.logWarn(
             "Nothing to update for " + psiFiles.size() + " files: " + psiFiles.toString());
       }
-      unsetUpdateInProgress(project);
-      pdUtils.refreshPanel(project);
-      // ServiceManager.getService(project, myTodoView.class).refresh();
     } finally {
       // if (filesToProceed != null && !filesToProceed.isEmpty())
       dcLogger.logInfo("MUTEX RELEASED");
       MUTEX.unlock();
+      unsetUpdateInProgress(project);
+      pdUtils.refreshPanel(project);
+      // ServiceManager.getService(project, myTodoView.class).refresh();
     }
   }
 
@@ -769,6 +769,12 @@ public abstract class AnalysisDataBase {
         .filter(e -> pdUtils.getProject(e.getKey()).equals(project))
         .filter(e -> !e.getValue().isEmpty())
         .map(Map.Entry::getKey)
+        .collect(Collectors.toSet());
+  }
+
+  public Set<Object> getAllCachedFiles(@NotNull final Object project) {
+    return mapFile2Suggestions.keySet().stream()
+        .filter(file -> pdUtils.getProject(file).equals(project))
         .collect(Collectors.toSet());
   }
 

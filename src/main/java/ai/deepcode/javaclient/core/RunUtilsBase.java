@@ -211,6 +211,14 @@ public abstract class RunUtilsBase {
 
   public void rescanInBackgroundCancellableDelayed(
       @NotNull Object project, int delayMilliseconds, boolean inBulkMode) {
+    rescanInBackgroundCancellableDelayed(project, delayMilliseconds, inBulkMode, true);
+  }
+
+  public void rescanInBackgroundCancellableDelayed(
+      @NotNull Object project,
+      int delayMilliseconds,
+      boolean inBulkMode,
+      boolean invalidateCaches) {
     final long requestId = System.currentTimeMillis();
     dcLogger.logInfo(
         "rescanInBackgroundCancellableDelayed requested for: ["
@@ -274,7 +282,7 @@ public abstract class RunUtilsBase {
             mapProject2RequestId.remove(project);
 
             // actual rescan
-            analysisData.removeProjectFromCaches(project);
+            if (invalidateCaches) analysisData.removeProjectFromCaches(project);
             updateCachedAnalysisResults(project, null, progress);
 
             if (bulkModeRequests.remove(actualRequestId)) {
@@ -309,14 +317,18 @@ public abstract class RunUtilsBase {
       @Nullable Collection<Object> files,
       @NotNull Collection<Object> filesToRemove,
       @NotNull Object progress) {
-    analysisData.updateCachedResultsForFiles(
-        project,
-        (files != null) ? files : deepCodeUtils.getAllSupportedFilesInProject(project),
-        filesToRemove,
-        progress);
-    updateAnalysisResultsUIPresentation(
-        (files != null) ? files : analysisData.getAllFilesWithSuggestions(project));
+    try {
+      analysisData.updateCachedResultsForFiles(
+          project,
+          (files != null) ? files : deepCodeUtils.getAllSupportedFilesInProject(project),
+          filesToRemove,
+          progress);
+    } finally {
+      updateAnalysisResultsUIPresentation(
+          project, (files != null) ? files : analysisData.getAllFilesWithSuggestions(project));
+    }
   }
 
-  protected abstract void updateAnalysisResultsUIPresentation(@NotNull Collection<Object> files);
+  protected abstract void updateAnalysisResultsUIPresentation(
+      @NotNull Object project, @NotNull Collection<Object> files);
 }
