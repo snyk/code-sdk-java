@@ -1,20 +1,24 @@
 plugins {
-    // Apply the java-library plugin to add support for Java Library
     id "java-library"
-    id "com.github.johnrengelman.shadow" version "5.2.0"
-    id("maven-publish")
-    id "com.jfrog.bintray" version "1.8.5"
+    id "maven-publish"
+    id "signing"
+}
+
+group = "io.snyk.code.sdk"
+archivesBaseName = "snyk-code-client"
+version = "2.1.5-SNAPSHOT"
+
+ext {
+    isReleaseVersion = !version.endsWith("SNAPSHOT")
 }
 
 repositories {
     jcenter()
 }
 
-group = "io.snyk.code.sdk"
-archivesBaseName = "snyk-code-client"
-version = "2.1.4"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
-sourceCompatibility = 11
 
 java {
     withJavadocJar()
@@ -33,6 +37,11 @@ configurations {
     integTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
+compileIntegTestJava {
+    sourceCompatibility = 11
+    targetCompatibility = 11
+}
+
 dependencies {
     implementation "com.squareup.retrofit2:retrofit:2.7.1"
     implementation "com.squareup.retrofit2:converter-gson:2.7.1"
@@ -43,8 +52,8 @@ dependencies {
 }
 
 task integTest(type: Test) {
-    description = 'Runs integration tests.'
-    group = 'verification'
+    description = "Runs integration tests."
+    group = "verification"
 
     testClassesDirs = sourceSets.integTest.output.classesDirs
     classpath = sourceSets.integTest.runtimeClasspath
@@ -56,3 +65,40 @@ task integTest(type: Test) {
     outputs.upToDateWhen { false }
 }
 integTest.dependsOn test
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            pom {
+                description = "Snyk Code Public API package in Java"
+                url = "https://github.com/snyk/snyk-code-client"
+                developers {
+                    developer {
+                        id = "ArtsiomCh"
+                        name = "Artsiom Chapialiou"
+                        email = "achapialiou@gmail.com"
+                    }
+                }
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://spdx.org/licenses/MIT.html"
+                    }
+                }
+                scm {
+                    connection = "scm:git:git@github.com:snyk/snyk-code-client.git"
+                    developerConnection = "scm:git:git@github.com:snyk/snyk-code-client.git"
+                    url = "https://github.com/snyk/snyk-code-client"
+                }
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.maven
+}
+tasks.withType(Sign) {
+    onlyIf { isReleaseVersion }
+}
