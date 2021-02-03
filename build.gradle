@@ -7,10 +7,7 @@ plugins {
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
 version = "2.1.5-SNAPSHOT"
-
-ext {
-    isReleaseVersion = !version.endsWith("SNAPSHOT")
-}
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 repositories {
     jcenter()
@@ -67,6 +64,18 @@ task integTest(type: Test) {
 integTest.dependsOn test
 
 publishing {
+    repositories {
+        maven {
+            def releaseRepo = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotRepo = "https://oss.sonatype.org/content/repositories/snapshots/"
+            url = isReleaseVersion ? releaseRepo : snapshotRepo
+            credentials {
+                username = project.hasProperty("ossrhUsername") ? ossrhUsername : "Unknown user"
+                password = project.hasProperty("ossrhPassword") ? ossrhPassword : "Unknown password"
+            }
+        }
+    }
+
     publications {
         maven(MavenPublication) {
             from components.java
