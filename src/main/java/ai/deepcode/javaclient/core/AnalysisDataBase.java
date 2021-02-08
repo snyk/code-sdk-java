@@ -245,31 +245,27 @@ public abstract class AnalysisDataBase {
     }
   }
 
-  // todo? propagate userActionNeeded through whole methods call chain
-  // fixme: should be project based
-  private static boolean loginRequested = false;
-  private static boolean isNotSucceedWarnShown = false;
+  private static final Set<Object> projectsLoginRequested = ConcurrentHashMap.newKeySet();
+  private static final Set<Object> projectsWithNotSucceedWarnShown = ConcurrentHashMap.newKeySet();
 
-  private boolean isNotSucceed(@NotNull Object project, EmptyResponse response, String message) {
+  private boolean isNotSucceed(@NotNull Object project, EmptyResponse response, String internalMessage) {
     if (response.getStatusCode() == 200) {
-      return loginRequested = isNotSucceedWarnShown = false;
-    } else if (response.getStatusCode() == 401) {
-      pdUtils.isLogged(project, !loginRequested);
-      loginRequested = isNotSucceedWarnShown = true;
-    }
-    final String fullMessage =
-        message + response.getStatusCode() + " " + response.getStatusDescription();
-    dcLogger.logWarn(fullMessage);
-    if (!isNotSucceedWarnShown) {
-      if (response.getStatusCode() / 100 == 4) {
-        pdUtils.showWarn("Network request fail: " + fullMessage, project);
+      projectsWithNotSucceedWarnShown.remove(project);
+      projectsLoginRequested.remove(project);
+    } else {
+      final String fullLogMessage =
+          internalMessage + response.getStatusCode() + " " + response.getStatusDescription();
+      dcLogger.logWarn(fullLogMessage);
+      final boolean wasWarnShown = projectsWithNotSucceedWarnShown.contains(project);
+      if (response.getStatusCode() == 401) {
+        pdUtils.isLogged(project, !projectsLoginRequested.contains(project));
+        projectsLoginRequested.add(project);
       } else {
-        pdUtils.showWarn(
-            "Server internal error. Please, try again later.\n" + fullMessage, project);
+        pdUtils.showWarn(response.getStatusDescription(), project, wasWarnShown);
       }
-      isNotSucceedWarnShown = true;
+      projectsWithNotSucceedWarnShown.add(project);
     }
-    return true;
+    return response.getStatusCode() != 200;
   }
 
   static final int MAX_BUNDLE_SIZE = 4000000; // bytes
