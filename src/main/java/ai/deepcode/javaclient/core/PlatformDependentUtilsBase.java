@@ -76,7 +76,7 @@ public abstract class PlatformDependentUtilsBase {
 
   public abstract void showInfo(String message, @Nullable Object project);
 
-  public abstract void showWarn(String message, @Nullable Object project);
+  public abstract void showWarn(String message, @Nullable Object project, boolean wasWarnShown);
 
   public abstract void showError(String message, @Nullable Object project);
 }
