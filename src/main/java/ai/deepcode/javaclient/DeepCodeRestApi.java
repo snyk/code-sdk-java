@@ -324,7 +324,7 @@ public final class DeepCodeRestApi {
    *
    * @param token
    * @param bundleId
-   * @param request List<FileHash2ContentRequest>
+   * @param request List&lt;FileHash2ContentRequest&gt;
    * @return EmptyResponse with return code and description.
    */
   public static EmptyResponse UploadFiles(
