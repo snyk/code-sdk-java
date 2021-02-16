@@ -1,6 +1,6 @@
 name: Release to OSSRH Sonatype
 on:
-  pull_request:
+  push:
     branches:
       - develop
       - master
