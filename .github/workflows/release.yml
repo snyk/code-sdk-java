@@ -1,0 +1,57 @@
+name: Release to OSSRH Sonatype
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+
+jobs:
+  gradle-wrapper-validation:
+    name: Validate Gradle Wrapper
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v2
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+  release-snapshot:
+    name: Release snapshot version
+    needs: gradle-wrapper-validation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Setup Gradle Wrapper cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Setting GPG key
+        run: |
+          echo "${{secrets.SIGNING_SECRET_KEY_RING_CONTENT}}" | base64 -d > ringkey.gpg
+          gpg --quiet --batch --yes --decrypt --passphrase="${{secrets.SECRET_PASSPHRASE}}" --output secring.gpg ringkey.gpg
+
+      - name: Release Deployment to Snapshot Repository
+        run: |
+          ./gradlew publish -Psigning.keyId=${{secrets.SIGNING_KEY_ID}} \
+                            -Psigning.password=${{secrets.SIGNING_PASSWORD}} \
+                            -Psigning.secretKeyRingFile=secring.gpg \
+                            -PossrhUsername=${{secrets.OSSRH_USERNAME}} \
+                            -PossrhPassword=${{secrets.OSSRH_PASSWORD}}
+
+      - name: Post Setting GPG key
+        run: rm -rf *.gpg
