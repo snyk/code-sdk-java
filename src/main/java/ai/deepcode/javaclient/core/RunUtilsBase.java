@@ -142,7 +142,7 @@ public abstract class RunUtilsBase {
             + runId);
 
     final Object project = pdUtils.getProject(file);
-    analysisData.setUpdateInProgress(project);
+    //analysisData.setUpdateInProgress(project);
 
     doBackgroundRun(
         project,
@@ -268,31 +268,34 @@ public abstract class RunUtilsBase {
             bulkModeUnset(project);
           }
 
-          // delay to let new consequent requests proceed and cancel current one
-          // or to let Idea proceed internal events (.gitignore update)
-          pdUtils.delay(delayMilliseconds, progress);
+          try {
+            // delay to let new consequent requests proceed and cancel current one
+            // or to let Idea proceed internal events (.gitignore update)
+            pdUtils.delay(delayMilliseconds, progress);
 
-          Long actualRequestId = mapProject2RequestId.get(project);
-          if (actualRequestId != null) {
-            dcLogger.logInfo(
-                "New Rescan started for ["
-                    + pdUtils.getProjectName(project)
-                    + "] with RequestId "
-                    + actualRequestId);
-            mapProject2RequestId.remove(project);
+            Long actualRequestId = mapProject2RequestId.get(project);
+            if (actualRequestId != null) {
+              dcLogger.logInfo(
+                  "New Rescan started for ["
+                      + pdUtils.getProjectName(project)
+                      + "] with RequestId "
+                      + actualRequestId);
+              mapProject2RequestId.remove(project);
 
-            // actual rescan
-            if (invalidateCaches) analysisData.removeProjectFromCaches(project);
-            updateCachedAnalysisResults(project, null, progress);
+              // actual rescan
+              if (invalidateCaches) analysisData.removeProjectFromCaches(project);
+              updateCachedAnalysisResults(project, null, progress);
 
-            if (bulkModeRequests.remove(actualRequestId)) {
-              bulkModeUnset(project);
+              if (bulkModeRequests.remove(actualRequestId)) {
+                bulkModeUnset(project);
+              }
+            } else {
+              dcLogger.logWarn("No actual RequestId found for: " + pdUtils.getProjectName(project));
             }
-          } else {
-            dcLogger.logWarn("No actual RequestId found for: " + pdUtils.getProjectName(project));
+            dcLogger.logInfo("Rescan ending for " + pdUtils.getProjectName(project));
+          } finally {
+            projectsWithFullRescanRequested.remove(project);
           }
-          projectsWithFullRescanRequested.remove(project);
-          dcLogger.logInfo("Rescan ending for " + pdUtils.getProjectName(project));
         });
   }
 
