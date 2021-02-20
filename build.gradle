@@ -6,7 +6,7 @@ plugins {
 
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
-version = "2.1.5-SNAPSHOT"
+version = "2.1.6-SNAPSHOT"
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 repositories {
