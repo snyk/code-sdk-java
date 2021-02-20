@@ -142,13 +142,13 @@ public abstract class AnalysisDataBase {
 
   private static final Set<Object> updateInProgress = Collections.synchronizedSet(new HashSet<>());
 
-  public void setUpdateInProgress(@NotNull Object project) {
+  private void setUpdateInProgress(@NotNull Object project) {
     synchronized (updateInProgress) {
       updateInProgress.add(project);
     }
   }
 
-  public void unsetUpdateInProgress(@NotNull Object project) {
+  private void unsetUpdateInProgress(@NotNull Object project) {
     synchronized (updateInProgress) {
       updateInProgress.remove(project);
     }

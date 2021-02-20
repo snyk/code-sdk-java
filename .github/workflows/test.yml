@@ -1,0 +1,39 @@
+name: Test
+on:
+  push:
+
+jobs:
+  gradle-wrapper-validation:
+    name: Validate Gradle Wrapper
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v2
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+  test:
+    name: Run tests
+    needs: gradle-wrapper-validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Setup Gradle cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Run tests
+        run: ./gradlew clean test
