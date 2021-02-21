@@ -79,6 +79,7 @@ publishing {
             pom {
                 description = "Snyk Code Public API package in Java"
                 url = "https://github.com/snyk/snyk-code-client"
+                name = "Snyk Code API Client"
                 developers {
                     developer {
                         id = "ArtsiomCh"
