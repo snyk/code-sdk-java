@@ -6,8 +6,7 @@ plugins {
 
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
-version = "2.1.6-SNAPSHOT"
-ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+version = "2.1.6"
 
 repositories {
     mavenCentral()
@@ -66,9 +65,7 @@ integTest.dependsOn test
 publishing {
     repositories {
         maven {
-            def releaseRepo = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotRepo = "https://oss.sonatype.org/content/repositories/snapshots/"
-            url = isReleaseVersion ? releaseRepo : snapshotRepo
+            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
             credentials {
                 username = project.hasProperty("ossrhUsername") ? ossrhUsername : "Unknown user"
                 password = project.hasProperty("ossrhPassword") ? ossrhPassword : "Unknown password"
@@ -109,5 +106,5 @@ signing {
     sign publishing.publications.maven
 }
 tasks.withType(Sign) {
-    onlyIf { isReleaseVersion }
+    onlyIf { project.hasProperty("release") }
 }
