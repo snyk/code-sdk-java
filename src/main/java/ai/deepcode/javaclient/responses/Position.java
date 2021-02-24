@@ -7,6 +7,10 @@ public interface Position {
 
   List<Integer> getCols();
 
+  default String getFile() {
+    return null;
+  }
+
   @Override
   String toString();
 }

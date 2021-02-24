@@ -13,15 +13,17 @@ public class MyTextRange {
   private final int endCol;
   //                msg range         poses in source file
   private final Map<MyTextRange, List<MyTextRange>> markers;
+  private final String file;
 
   MyTextRange(
-      int start,
-      int end,
-      int startRow,
-      int endRow,
-      int startCol,
-      int endCol,
-      Map<MyTextRange, List<MyTextRange>> markers) {
+          int start,
+          int end,
+          int startRow,
+          int endRow,
+          int startCol,
+          int endCol,
+          Map<MyTextRange, List<MyTextRange>> markers,
+          String file) {
 
     this.start = start;
     this.end = end;
@@ -30,10 +32,11 @@ public class MyTextRange {
     this.startCol = startCol;
     this.endCol = endCol;
     this.markers = markers;
+    this.file = file;
   }
 
   MyTextRange(int start, int end) {
-    this(start, end, -1, -1, -1, -1, Collections.emptyMap());
+    this(start, end, -1, -1, -1, -1, Collections.emptyMap(), null);
   }
 
   public int getStart() {
@@ -62,5 +65,9 @@ public class MyTextRange {
 
   public Map<MyTextRange, List<MyTextRange>> getMarkers() {
     return markers;
+  }
+
+  public String getFile() {
+    return file;
   }
 }

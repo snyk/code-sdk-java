@@ -40,6 +40,8 @@ public abstract class PlatformDependentUtilsBase {
   @NotNull
   protected abstract String getProjectBasedFilePath(@NotNull Object file);
 
+  public abstract Object getFileByDeepcodedPath(String path, Object project);
+
   public abstract Object[] getOpenProjects();
   // ProjectManager.getInstance().getOpenProjects()
 

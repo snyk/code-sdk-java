@@ -6,11 +6,13 @@ public class MarkerPosition implements Position {
 
   private List<Integer> rows;
   private List<Integer> cols;
+  private String file;
 
-  public MarkerPosition(List<Integer> rows, List<Integer> cols) {
+  public MarkerPosition(List<Integer> rows, List<Integer> cols, String file) {
     super();
     this.rows = rows;
     this.cols = cols;
+    this.file = file;
   }
 
   @Override
@@ -25,6 +27,11 @@ public class MarkerPosition implements Position {
 
   @Override
   public String toString() {
-    return "marker range:  rows: " + rows + " cols: " + cols;
+    return "marker range:  rows: " + rows + " cols: " + cols+ " file: " + file;
+  }
+
+  @Override
+  public String getFile() {
+    return file;
   }
 }
