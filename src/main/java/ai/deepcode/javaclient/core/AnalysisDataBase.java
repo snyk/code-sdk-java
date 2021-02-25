@@ -694,7 +694,12 @@ public abstract class AnalysisDataBase {
                 new MyTextRange(marker.getMsg().get(0), marker.getMsg().get(1) + 1);
             final List<MyTextRange> positions =
                 marker.getPos().stream()
-                    .map(it -> parsePosition2MyTextRange(it, file, Collections.emptyMap()))
+                    .map(it -> {
+                      final Object fileForMarker = (it.getFile() == null || it.getFile().isEmpty())
+                              ? file
+                              : pdUtils.getFileByDeepcodedPath(it.getFile(), project);
+                      return parsePosition2MyTextRange(it, fileForMarker, Collections.emptyMap());
+                    })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             markers.put(msgRange, positions);
@@ -752,7 +757,8 @@ public abstract class AnalysisDataBase {
         endRow,
         startCol,
         endCol,
-        markers);
+        markers,
+        position.getFile());
   }
 
   private FileContent createFileContent(Object file) {
