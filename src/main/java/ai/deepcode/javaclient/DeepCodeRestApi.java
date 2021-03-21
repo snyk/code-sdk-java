@@ -252,7 +252,6 @@ public final class DeepCodeRestApi {
     return result;
   }
 
-
   private interface ExtendBundleCall {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
@@ -363,13 +362,14 @@ public final class DeepCodeRestApi {
   }
 
   private interface GetAnalysisCall {
-    //    @retrofit2.http.Headers("Content-Type: application/json")
-    @GET("analysis/{bundleId}")
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @POST("analysis/{bundleId}")
     Call<GetAnalysisResponse> doGetAnalysis(
         @Header("Session-Token") String token,
         @Path(value = "bundleId", encoded = true) String bundleId,
         @Query("severity") Integer severity,
-        @QueryName String linters);
+        @QueryName String linters,
+        @Body GetAnalysisRequest filesToAnalyse);
   }
 
   /**
@@ -379,12 +379,21 @@ public final class DeepCodeRestApi {
    */
   @NotNull
   public static GetAnalysisResponse getAnalysis(
-      String token, String bundleId, Integer severity, boolean useLinters) {
+      String token,
+      String bundleId,
+      Integer severity,
+      boolean useLinters,
+      List<String> filesToAnalyse) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
           getAnalysisCall
-              .doGetAnalysis(token, bundleId, severity, (useLinters) ? "linters" : null)
+              .doGetAnalysis(
+                  token,
+                  bundleId,
+                  severity,
+                  (useLinters) ? "linters" : null,
+                  new GetAnalysisRequest(filesToAnalyse))
               .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();

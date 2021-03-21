@@ -284,7 +284,7 @@ public abstract class RunUtilsBase {
 
               // actual rescan
               if (invalidateCaches) analysisData.removeProjectFromCaches(project);
-              updateCachedAnalysisResults(project, null, progress);
+              updateCachedAnalysisResults(project, progress);
 
               if (bulkModeRequests.remove(actualRequestId)) {
                 bulkModeUnset(project);
@@ -310,25 +310,13 @@ public abstract class RunUtilsBase {
     }
   }
 
-  public void updateCachedAnalysisResults(
-      @NotNull Object project, @Nullable Collection<Object> files, @NotNull Object progress) {
-    updateCachedAnalysisResults(project, files, Collections.emptyList(), progress);
-  }
-
-  public void updateCachedAnalysisResults(
-      @NotNull Object project,
-      @Nullable Collection<Object> files,
-      @NotNull Collection<Object> filesToRemove,
-      @NotNull Object progress) {
+  public void updateCachedAnalysisResults(@NotNull Object project, @NotNull Object progress) {
     try {
       analysisData.updateCachedResultsForFiles(
-          project,
-          (files != null) ? files : deepCodeUtils.getAllSupportedFilesInProject(project),
-          filesToRemove,
-          progress);
+          project, deepCodeUtils.getAllSupportedFilesInProject(project), progress);
     } finally {
       updateAnalysisResultsUIPresentation(
-          project, (files != null) ? files : analysisData.getAllFilesWithSuggestions(project));
+          project, analysisData.getAllFilesWithSuggestions(project));
     }
   }
 

@@ -97,6 +97,8 @@ public abstract class AnalysisDataBase {
     return mapProject2BundleId.keySet();
   }
 
+  private static final Map<Object, Set<Object>> mapProject2RemovedFiles = new ConcurrentHashMap<>();
+
   public void removeFilesFromCache(@NotNull Collection<Object> files) {
     try {
       dcLogger.logInfo("Request to remove from cache " + files.size() + " files: " + files);
@@ -107,6 +109,9 @@ public abstract class AnalysisDataBase {
       for (Object file : files) {
         if (file != null && isFileInCache(file)) {
           mapFile2Suggestions.remove(file);
+          mapProject2RemovedFiles
+              .computeIfAbsent(pdUtils.getProject(file), p -> new HashSet<>())
+              .add(file);
           hashContentUtils.removeFileHashContent(file);
           removeCounter++;
         }
@@ -132,6 +137,7 @@ public abstract class AnalysisDataBase {
       dcLogger.logInfo("Removed from cache: " + project);
     }
     removeFilesFromCache(cachedFilesOfProject(project));
+    mapProject2RemovedFiles.remove(project);
   }
 
   private Collection<Object> cachedFilesOfProject(@NotNull Object project) {
@@ -171,22 +177,20 @@ public abstract class AnalysisDataBase {
     }
   }
 
-  /*
-    public static void updateCachedResultsForFile(@NotNull Object psiFile) {
-      updateCachedResultsForFiles(Collections.singleton(psiFile), Collections.emptyList());
-    }
-  */
-
   public void updateCachedResultsForFiles(
       @NotNull Object project,
-      @NotNull Collection<Object> psiFiles,
-      @NotNull Collection<Object> filesToRemove,
+      @NotNull Collection<Object> allProjectFiles,
       @NotNull Object progress) {
-    if (psiFiles.isEmpty() && filesToRemove.isEmpty()) {
+    Collection<Object> filesToRemove = mapProject2RemovedFiles.remove(project);
+    if (filesToRemove == null) filesToRemove = Collections.emptyList();
+    // remove from server only files physically removed from Project
+    filesToRemove.removeAll(allProjectFiles);
+    if (allProjectFiles.isEmpty() && filesToRemove.isEmpty()) {
       dcLogger.logWarn("updateCachedResultsForFiles requested for empty list of files");
       return;
     }
-    dcLogger.logInfo("Update requested for " + psiFiles.size() + " files: " + psiFiles.toString());
+    dcLogger.logInfo(
+        "Update requested for " + allProjectFiles.size() + " files: " + allProjectFiles.toString());
     if (!deepCodeParams.consentGiven(project)) {
       dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
       return;
@@ -196,7 +200,7 @@ public abstract class AnalysisDataBase {
       dcLogger.logInfo("MUTEX LOCK");
       setUpdateInProgress(project);
       Collection<Object> filesToProceed =
-          psiFiles.stream()
+          allProjectFiles.stream()
               .filter(Objects::nonNull)
               .filter(file -> !mapFile2Suggestions.containsKey(file))
               .collect(Collectors.toSet());
@@ -212,29 +216,19 @@ public abstract class AnalysisDataBase {
                 + " ["
                 + fileHash
                 + "]");
-        if (filesToProceed.size() == 1 && filesToRemove.isEmpty()) {
-          // if only one file updates then its most likely from annotator. So we need to get
-          // suggestions asap:
-          // we do that through createBundle with fileContent
-          mapFile2Suggestions.put(firstFile, retrieveSuggestions(firstFile, progress));
-          // and then request normal extendBundle later to synchronize results on server
-          pdUtils.runInBackgroundCancellable(
-              firstFile,
-              "Synchronize analysis result with server...",
-              (progress1) ->
-                  retrieveSuggestions(project, filesToProceed, filesToRemove, progress1));
-        } else {
-          mapFile2Suggestions.putAll(
-              retrieveSuggestions(project, filesToProceed, filesToRemove, progress));
-        }
       } else if (!filesToRemove.isEmpty()) {
+        dcLogger.logWarn(
+            "Nothing to update for "
+                + allProjectFiles.size()
+                + " files: "
+                + allProjectFiles.toString());
+      }
+      if (!filesToRemove.isEmpty()) {
         dcLogger.logInfo(
             "Files to remove: " + filesToRemove.size() + " files: " + filesToRemove.toString());
-        retrieveSuggestions(project, filesToProceed, filesToRemove, progress);
-      } else {
-        dcLogger.logWarn(
-            "Nothing to update for " + psiFiles.size() + " files: " + psiFiles.toString());
       }
+      mapFile2Suggestions.putAll(
+          retrieveSuggestions(project, filesToProceed, filesToRemove, progress));
     } finally {
       // if (filesToProceed != null && !filesToProceed.isEmpty())
       dcLogger.logInfo("MUTEX RELEASED");
@@ -286,15 +280,23 @@ public abstract class AnalysisDataBase {
 
     List<String> missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress);
 
+    if (filesToProceed.isEmpty()) { // no sense to proceed
+      return EMPTY_MAP;
+    }
     uploadFilesStep(project, filesToProceed, missingFiles, progress);
 
     // ---------------------------------------- Get Analysis
     final String bundleId = mapProject2BundleId.getOrDefault(project, "");
-    if (bundleId.isEmpty()) return EMPTY_MAP; // no sense to proceed without bundleId
+    if (bundleId.isEmpty()) { // no sense to proceed
+      return EMPTY_MAP;
+    }
     long startTime = System.currentTimeMillis();
     pdUtils.progressSetText(progress, WAITING_FOR_ANALYSIS_TEXT);
     pdUtils.progressCheckCanceled(progress);
-    GetAnalysisResponse getAnalysisResponse = doGetAnalysis(project, bundleId, progress);
+    List<String> filesToAnalyse =
+        filesToProceed.stream().map(pdUtils::getDeepCodedFilePath).collect(Collectors.toList());
+    GetAnalysisResponse getAnalysisResponse =
+        doGetAnalysis(project, bundleId, progress, filesToAnalyse);
     Map<Object, List<SuggestionForFile>> result =
         parseGetAnalysisResponse(project, filesToProceed, getAnalysisResponse, progress);
     dcLogger.logInfo(
@@ -395,59 +397,6 @@ public abstract class AnalysisDataBase {
     }
     dcLogger.logInfo(
         "--- Upload Files took: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-  }
-
-  /** Perform costly network request. <b>No cache checks!</b> */
-  @NotNull
-  private List<SuggestionForFile> retrieveSuggestions(
-      @NotNull Object file, @NotNull Object progress) {
-    final Object project = pdUtils.getProject(file);
-    List<SuggestionForFile> result;
-    long startTime;
-    // ---------------------------------------- Create Bundle
-    startTime = System.currentTimeMillis();
-    dcLogger.logInfo("Creating temporary Bundle from File content");
-    pdUtils.progressCheckCanceled(progress);
-
-    FileContent fileContent =
-        new FileContent(pdUtils.getDeepCodedFilePath(file), hashContentUtils.getFileContent(file));
-    FileContentRequest fileContentRequest =
-        new FileContentRequest(Collections.singletonList(fileContent));
-
-    // todo?? it might be cheaper on server side to extend one temporary bundle
-    //  rather then create the new one every time
-    final CreateBundleResponse createBundleResponse =
-        DeepCodeRestApi.createBundle(deepCodeParams.getSessionToken(), fileContentRequest);
-    isNotSucceed(project, createBundleResponse, "Bad Create/Extend Bundle request: ");
-
-    final String bundleId = createBundleResponse.getBundleId();
-    if (bundleId.isEmpty()) return Collections.emptyList(); // no sense to proceed without bundleId
-
-    List<String> missingFiles = createBundleResponse.getMissingFiles();
-    dcLogger.logInfo(
-        "--- Create temporary Bundle took: "
-            + (System.currentTimeMillis() - startTime)
-            + " milliseconds"
-            + "\nbundleId: "
-            + bundleId
-            + "\nmissingFiles: "
-            + missingFiles);
-    if (!missingFiles.isEmpty()) dcLogger.logWarn("missingFiles is NOT empty!");
-
-    // ---------------------------------------- Get Analysis
-    pdUtils.progressCheckCanceled(progress);
-    startTime = System.currentTimeMillis();
-    GetAnalysisResponse getAnalysisResponse = doGetAnalysis(project, bundleId, progress);
-    result =
-        parseGetAnalysisResponse(
-                project, Collections.singleton(file), getAnalysisResponse, progress)
-            .getOrDefault(file, Collections.emptyList());
-    mapProject2analysisUrl.put(project, "");
-
-    dcLogger.logInfo(
-        "--- Get Analysis took: " + (System.currentTimeMillis() - startTime) + " milliseconds");
-    //    progress.stop();
-    return result;
   }
 
   private void uploadFiles(
@@ -589,7 +538,10 @@ public abstract class AnalysisDataBase {
 
   @NotNull
   private GetAnalysisResponse doGetAnalysis(
-      @NotNull Object project, @NotNull String bundleId, @NotNull Object progress) {
+      @NotNull Object project,
+      @NotNull String bundleId,
+      @NotNull Object progress,
+      List<String> filesToAnalyse) {
     GetAnalysisResponse response;
     int counter = 0;
     final int timeout = 100; // seconds
@@ -601,7 +553,8 @@ public abstract class AnalysisDataBase {
               deepCodeParams.getSessionToken(),
               bundleId,
               deepCodeParams.getMinSeverity(),
-              deepCodeParams.useLinter());
+              deepCodeParams.useLinter(),
+              filesToAnalyse);
 
       pdUtils.progressCheckCanceled(progress);
       dcLogger.logInfo(response.toString());
