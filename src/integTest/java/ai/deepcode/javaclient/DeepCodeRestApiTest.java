@@ -9,7 +9,9 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -406,14 +408,17 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------Get Analysis----------------\n");
     assertNotNull(
         "`bundleId` should be initialized at `_030_createBundle_from_source()`", bundleId);
+    final String deepcodedFilePath =
+        createFileHashRequest(null).getFiles().keySet().stream().findFirst().orElseThrow();
+    final List<String> analysedFiles = Collections.singletonList(deepcodedFilePath);
     assertAndPrintGetAnalysisResponse(
-        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false));
+        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, false, analysedFiles));
     System.out.println("\n---- With `Linters` param:\n");
     assertAndPrintGetAnalysisResponse(
-        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true));
+        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, true, analysedFiles));
     System.out.println("\n---- With `severity=2` param:\n");
     assertAndPrintGetAnalysisResponse(
-            DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false));
+        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, false, analysedFiles));
   }
 
   private void assertAndPrintGetAnalysisResponse(GetAnalysisResponse response) {
