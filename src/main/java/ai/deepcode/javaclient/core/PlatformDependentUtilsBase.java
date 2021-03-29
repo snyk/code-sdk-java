@@ -32,6 +32,12 @@ public abstract class PlatformDependentUtilsBase {
   public abstract String getFileName(@NotNull Object file);
 
   @NotNull
+  public abstract String getFilePath(@NotNull Object file);
+
+  @NotNull
+  public abstract String getDirPath(@NotNull Object file);
+
+  @NotNull
   public String getDeepCodedFilePath(@NotNull Object file) {
     final String path = getProjectBasedFilePath(file);
     return path.startsWith("/") ? path : "/" + path;
@@ -67,6 +73,8 @@ public abstract class PlatformDependentUtilsBase {
   public abstract void progressSetText(@Nullable Object progress, String text);
 
   public abstract void progressCheckCanceled(@Nullable Object progress);
+
+  public abstract boolean progressCanceled(@Nullable Object progress);
 
   public abstract void progressSetFraction(@Nullable Object progress, double fraction);
 

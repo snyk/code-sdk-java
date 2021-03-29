@@ -122,7 +122,8 @@ public abstract class RunUtilsBase {
   public void runInBackgroundCancellable(
       @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
     final String s = progressConsumer.toString();
-    final String runId = s.substring(s.lastIndexOf('/'), s.length() - 1);
+    final int indexOfSlash = s.lastIndexOf('/');
+    final String runId = s.substring(Math.max(indexOfSlash, 0), s.length() - 1);
     dcLogger.logInfo(
         "runInBackgroundCancellable requested for: "
             + pdUtils.getFileName(file)
@@ -172,7 +173,8 @@ public abstract class RunUtilsBase {
           Consumer<Object> actualRunnable = mapFile2Runnable.get(fileId);
           if (actualRunnable != null) {
             final String s1 = actualRunnable.toString();
-            final String runIdToRun = s1.substring(s1.lastIndexOf('/'), s1.length() - 1);
+            final int indexOfSlash1 = s1.lastIndexOf('/');
+            final String runIdToRun = s1.substring(Math.max(indexOfSlash1, 0), s1.length() - 1);
             dcLogger.logInfo(
                 "New Process started for "
                     + pdUtils.getFileName(file)
@@ -312,8 +314,11 @@ public abstract class RunUtilsBase {
 
   public void updateCachedAnalysisResults(@NotNull Object project, @NotNull Object progress) {
     try {
-      analysisData.updateCachedResultsForFiles(
-          project, deepCodeUtils.getAllSupportedFilesInProject(project), progress);
+      final List<Object> allSupportedFilesInProject =
+          deepCodeUtils.getAllSupportedFilesInProject(project, true, progress);
+
+      analysisData.updateCachedResultsForFiles(project, allSupportedFilesInProject, progress);
+
     } finally {
       updateAnalysisResultsUIPresentation(
           project, analysisData.getAllFilesWithSuggestions(project));

@@ -3,6 +3,7 @@ package ai.deepcode.javaclient.core;
 import ai.deepcode.javaclient.DeepCodeRestApi;
 import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -12,16 +13,19 @@ public abstract class DeepCodeUtilsBase {
   private final AnalysisDataBase analysisData;
   private final DeepCodeParamsBase deepCodeParams;
   private final DeepCodeIgnoreInfoHolderBase ignoreInfoHolder;
+  private final PlatformDependentUtilsBase pdUtils;
   private final DCLoggerBase dcLogger;
 
   protected DeepCodeUtilsBase(
       @NotNull AnalysisDataBase analysisData,
       @NotNull DeepCodeParamsBase deepCodeParams,
       @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
+      @NotNull PlatformDependentUtilsBase pdUtils,
       @NotNull DCLoggerBase dcLogger) {
     this.analysisData = analysisData;
     this.deepCodeParams = deepCodeParams;
     this.ignoreInfoHolder = ignoreInfoHolder;
+    this.pdUtils = pdUtils;
     this.dcLogger = dcLogger;
     initSupportedExtentionsAndConfigFiles();
   }
@@ -29,23 +33,34 @@ public abstract class DeepCodeUtilsBase {
   protected static Set<String> supportedExtensions = Collections.emptySet();
   protected static Set<String> supportedConfigFiles = Collections.emptySet();
 
-  public List<Object> getAllSupportedFilesInProject(@NotNull Object project) {
+  public List<Object> getAllSupportedFilesInProject(
+          @NotNull Object project,
+          boolean scanAllMissedIgnoreFile,
+          @Nullable Object progress) {
     final Collection<Object> allProjectFiles = allProjectFiles(project);
     if (allProjectFiles.isEmpty()) {
       dcLogger.logWarn("Empty files list for project: " + project);
     }
-    ignoreInfoHolder.removeProject(project);
-    // Initial scan for .dcignore files
-    allProjectFiles.stream()
-        .filter(ignoreInfoHolder::is_dcignoreFile)
-        .forEach(ignoreInfoHolder::update_dcignoreFileContent);
-    // Initial scan for .gitignore files
-    allProjectFiles.stream()
-        .filter(ignoreInfoHolder::is_gitignoreFile)
-        .forEach(ignoreInfoHolder::update_gitignoreFileContent);
+    if (scanAllMissedIgnoreFile) {
+      ignoreInfoHolder.scanAllMissedIgnoreFiles(allProjectFiles, progress);
+    }
 
-    final List<Object> result =
-        allProjectFiles.stream().filter(this::isSupportedFileFormat).collect(Collectors.toList());
+    dcLogger.logInfo("ReScan for All ignored files at: " + project);
+    int counter = 0;
+    final int totalSize = allProjectFiles.size();
+    final List<Object> result = new ArrayList<>();
+    for (Object file : allProjectFiles) {
+      pdUtils.progressSetText(progress, "Checked if supported " + counter + " files of " + totalSize);
+      pdUtils.progressSetFraction(progress, ((double) counter++/ totalSize));
+      if (isSupportedFileFormat(file)) {
+        result.add(file);
+      }
+      pdUtils.progressCheckCanceled(progress);
+    }
+    dcLogger.logInfo("ReScan for All ignored files FINISHED for: " + project);
+    // clean up cashes built without .ignore files parsing
+    if (!scanAllMissedIgnoreFile) ignoreInfoHolder.removeProject(project);
+
     if (result.isEmpty()) dcLogger.logWarn("Empty supported files list for project: " + project);
     return result;
   }
@@ -56,11 +71,11 @@ public abstract class DeepCodeUtilsBase {
 
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
-    if (ignoreInfoHolder.isDcIgnoredFile(file) || isGitIgnored(file)) return false;
+    if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnoredExternalCheck(file)) return false;
     final boolean result =
         getFileLength(file) < MAX_FILE_SIZE
             && (supportedExtensions.contains(getFileExtention(file))
-                || supportedConfigFiles.contains(ignoreInfoHolder.getFileName(file)));
+                || supportedConfigFiles.contains(pdUtils.getFileName(file)));
     // DCLogger.getInstance().info("isSupportedFileFormat ends for " + psiFile.getName());
     return result;
   }
@@ -69,7 +84,7 @@ public abstract class DeepCodeUtilsBase {
 
   protected abstract String getFileExtention(@NotNull Object file);
 
-  protected abstract boolean isGitIgnored(@NotNull Object file);
+  protected abstract boolean isGitIgnoredExternalCheck(@NotNull Object file);
 
   /** Potentially <b>Heavy</b> network request! */
   private void initSupportedExtentionsAndConfigFiles() {
