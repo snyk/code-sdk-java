@@ -3,6 +3,7 @@ package ai.deepcode.javaclient.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.function.Consumer;
 
 public abstract class PlatformDependentUtilsBase {
@@ -31,9 +32,11 @@ public abstract class PlatformDependentUtilsBase {
   @NotNull
   public abstract String getFileName(@NotNull Object file);
 
+  /** @return path as String with `/` as separator (even on Windows). See {@link File#separatorChar} */
   @NotNull
   public abstract String getFilePath(@NotNull Object file);
 
+  /** @return path as String with `/` as separator (even on Windows). See {@link File#separatorChar} */
   @NotNull
   public abstract String getDirPath(@NotNull Object file);
 

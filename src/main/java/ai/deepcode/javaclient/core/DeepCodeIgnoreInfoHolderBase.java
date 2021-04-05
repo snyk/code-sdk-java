@@ -16,15 +16,18 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
   private final PlatformDependentUtilsBase pdUtils;
   private final DCLoggerBase dcLogger;
 
-  private static final Map<Object, Set<PathMatcher>> map_ignore2PathMatchers = new ConcurrentHashMap<>();
+  // .ignore file to Line in .ignore file to PathMatcher
+  private final Map<Object, Map<Integer, PathMatcher>> map_ignore2PathMatchers = new ConcurrentHashMap<>();
 
-  private static final Map<Object, Set<PathMatcher>> map_ignore2ReIncludePathMatchers = new ConcurrentHashMap<>();
+  // .ignore file to Line in .ignore file to PathMatcher
+  private final Map<Object, Map<Integer, PathMatcher>> map_ignore2ReIncludePathMatchers = new ConcurrentHashMap<>();
 
-  private static final Map<Object, Map<String, Boolean>> project2IgnoredFilePaths = new ConcurrentHashMap<>();
+  private final Map<Object, Map<String, Boolean>> project2IgnoredFilePaths = new ConcurrentHashMap<>();
 
   protected DeepCodeIgnoreInfoHolderBase(
           @NotNull HashContentUtilsBase hashContentUtils,
-          PlatformDependentUtilsBase pdUtils, @NotNull DCLoggerBase dcLogger) {
+          @NotNull PlatformDependentUtilsBase pdUtils,
+          @NotNull DCLoggerBase dcLogger) {
     this.hashContentUtils = hashContentUtils;
     this.pdUtils = pdUtils;
     this.dcLogger = dcLogger;
@@ -36,33 +39,42 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
     allProjectFiles.stream()
             .filter(this::is_ignoreFile)
             .filter(ignoreFile -> !map_ignore2PathMatchers.containsKey(ignoreFile))
-            .forEach(ignoreFile -> update_ignoreFileContent(ignoreFile, allProjectFiles, progress));
+            .forEach(ignoreFile -> update_ignoreFileContent(ignoreFile, progress));
   }
 
-  public boolean isIgnoredFile(@NotNull Object file) {
+  public boolean isIgnoredFile(@NotNull Object fileToCheck) {
     return project2IgnoredFilePaths
-        .computeIfAbsent(pdUtils.getProject(file), prj -> new ConcurrentHashMap<>())
+        .computeIfAbsent(pdUtils.getProject(fileToCheck), prj -> new ConcurrentHashMap<>())
         .computeIfAbsent(
-            pdUtils.getFilePath(file),
-            filePath -> isMatchForMap(file, map_ignore2PathMatchers, filePath) &&
-                        !isMatchForMap(file, map_ignore2ReIncludePathMatchers, filePath)
+            pdUtils.getFilePath(fileToCheck),
+            filePath ->
+                map_ignore2PathMatchers.keySet().stream()
+                    .filter(ignoreFile -> inScope(filePath, ignoreFile))
+                    .anyMatch(ignoreFile -> isIgnoredFile(filePath, ignoreFile))
         );
   }
 
-  private boolean isMatchForMap(Object file, @NotNull Map<Object, Set<PathMatcher>> map, String filePath) {
+  private boolean isIgnoredFile(@NotNull String filePath, @NotNull Object ignoreFile) {
     final Path path = pathOf(filePath);
-    return map.entrySet().stream()
-            .filter(e -> inScope(e.getKey(), file))
-            .flatMap(e -> e.getValue().stream())
-            .anyMatch(it -> it.matches(path));
+    return map_ignore2PathMatchers.get(ignoreFile).entrySet().stream()
+            .anyMatch(line2matcher -> {
+              final int lineIndex = line2matcher.getKey();
+              final PathMatcher pathMatcher = line2matcher.getValue();
+              return pathMatcher.matches(path) &&
+                      // An optional prefix "!" which negates the pattern;
+                      // any matching file excluded by a _previous_ pattern will become included again.
+                      map_ignore2ReIncludePathMatchers.get(ignoreFile).entrySet().stream()
+                              .filter(e -> e.getKey() > lineIndex)
+                              .noneMatch(e -> e.getValue().matches(path));
+            });
   }
 
   private void removeIgnoredFilePaths(@NotNull Object ignoreFile) {
     final Object project = pdUtils.getProject(ignoreFile);
     project2IgnoredFilePaths
-            .get(project)
+            .getOrDefault(project, Collections.emptyMap())
             .keySet()
-            .removeIf(filePath -> inScope(ignoreFile, filePath));
+            .removeIf(filePath -> inScope(filePath, ignoreFile));
   }
 
   /** copy of {@link Path#of(java.lang.String, java.lang.String...)} due to java 8 compatibility */
@@ -70,11 +82,7 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
     return FileSystems.getDefault().getPath(first, more);
   }
 
-  private boolean inScope(@NotNull Object ignoreFile, @NotNull Object fileToCheck) {
-    return inScope(ignoreFile, pdUtils.getFilePath(fileToCheck));
-  };
-
-  private boolean inScope(@NotNull Object ignoreFile, @NotNull String filePathToCheck) {
+  private boolean inScope(@NotNull String filePathToCheck, @NotNull Object ignoreFile) {
     return filePathToCheck.startsWith(pdUtils.getDirPath(ignoreFile));
   };
 
@@ -106,22 +114,22 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
     project2IgnoredFilePaths.remove(project);
   }
 
-  public void update_ignoreFileContent(@NotNull Object ignoreFile, @NotNull Collection<Object> allProjectFiles, @Nullable Object progress) {
+  public void update_ignoreFileContent(@NotNull Object ignoreFile, @Nullable Object progress) {
     dcLogger.logInfo("Scanning .ignore file: " + pdUtils.getFilePath(ignoreFile));
     parse_ignoreFile2Globs(ignoreFile, progress);
     dcLogger.logInfo("Scan FINISHED for .ignore file: " + pdUtils.getFilePath(ignoreFile));
   }
 
-  private void parse_ignoreFile2Globs(@NotNull Object file, @Nullable Object progress) {
-    pdUtils.progressSetText(progress, "parsing file: " + pdUtils.getFilePath(file));
-    Set<PathMatcher> ignoreSet = new HashSet<>();
-    Set<PathMatcher> reIncludedSet = new HashSet<>();
-    String basePath = pdUtils.getDirPath(file);
-    String lineSeparator = "[\n\r]";
-    final String fileText = hashContentUtils.doGetFileContent(file);
+  private void parse_ignoreFile2Globs(@NotNull Object ignoreFile, @Nullable Object progress) {
+    pdUtils.progressSetText(progress, "parsing file: " + pdUtils.getFilePath(ignoreFile));
+    Map<Integer, PathMatcher> ignoreMatchers = new HashMap<>();
+    Map<Integer, PathMatcher> reIncludedMatchers = new HashMap<>();
+    String basePath = pdUtils.getDirPath(ignoreFile);
+    String lineSeparator = "\r\n|[\r\n]";
+    final String fileText = hashContentUtils.doGetFileContent(ignoreFile);
     final String[] lines = fileText.split(lineSeparator);
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i];
+    for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      String line = lines[lineIndex];
 
       // https://git-scm.com/docs/gitignore#_pattern_format
       line = line.trim();
@@ -138,12 +146,15 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
       // pattern is relative to the directory level of the particular .gitignore file itself.
       // Otherwise the pattern may also match at any level below the .gitignore level.
       int indexBegMidSepar = line.substring(0, line.length() - 1).indexOf('/');
-      if (indexBegMidSepar != 0) prefix += "/";
       if (indexBegMidSepar == -1) {
         prefix += "**/";
-      } else if (line.endsWith("/*") || line.endsWith("/**")) {
-        int indexLastSepar = line.lastIndexOf('/');
-        if (indexBegMidSepar == indexLastSepar) prefix += "**/";
+      } else if (indexBegMidSepar > 0) {
+        if (line.endsWith("/*") || line.endsWith("/**")) {
+          int indexLastSepar = line.lastIndexOf('/');
+          if (indexBegMidSepar == indexLastSepar) prefix += "**/";
+        } else {
+          prefix += "/";
+        }
       }
 
       // If there is a separator at the end of the pattern then the pattern will only match
@@ -159,17 +170,17 @@ public abstract class DeepCodeIgnoreInfoHolderBase {
                 .getPathMatcher("glob:" + prefix + line + postfix);
 
         if (isReIncludePattern) {
-          reIncludedSet.add(globToMatch);
+          reIncludedMatchers.put(lineIndex, globToMatch);
         } else {
-          ignoreSet.add(globToMatch);
+          ignoreMatchers.put(lineIndex, globToMatch);
         }
       } catch (PatternSyntaxException e) {
         dcLogger.logWarn("Incorrect Glob syntax in .ignore file: " + e.getMessage());
       }
-      pdUtils.progressSetFraction(progress, (double) i/lines.length);
+      pdUtils.progressSetFraction(progress, (double) lineIndex/lines.length);
       pdUtils.progressCheckCanceled(progress);
     }
-    map_ignore2ReIncludePathMatchers.put(file, reIncludedSet);
-    map_ignore2PathMatchers.put(file, ignoreSet);
+    map_ignore2ReIncludePathMatchers.put(ignoreFile, reIncludedMatchers);
+    map_ignore2PathMatchers.put(ignoreFile, ignoreMatchers);
   }
 }
