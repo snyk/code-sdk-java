@@ -2,9 +2,7 @@ package ai.deepcode.javaclient.core;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +13,6 @@ import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeIgnoreInfoHolderTest {
 
   private final File basicIgnoreFile = new File(getClass().getClassLoader().getResource("basic/.dcignore").getPath());
@@ -25,7 +22,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   private final File fullDcignoreProject = fullDcignoreFile.getParentFile();
 
   @Test
-  public void _010_ignoreFileNaming() {
+  public void ignoreFileNaming() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
     assertTrue(ignoreInfoHolder.is_dcignoreFile(new File(basicProject, ".dcignore")));
     assertTrue(ignoreInfoHolder.is_gitignoreFile(new File(basicProject, ".gitignore")));
@@ -34,7 +31,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   @Test
-  public void _020_basicIgnoreFile() {
+  public void basicIgnoreFile() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
     assertFalse(ignoreInfoHolder.isIgnoredFile(new File(basicProject, "anyfile.js")));
 
@@ -44,7 +41,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   @Test
-  public void _030_fullIgnoreFile() {
+  public void fullIgnoreFile() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
 
     assertTrue(fullDcignoreFile.exists());
@@ -99,7 +96,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   @Test
-  public void _040_removeIgnoreFile() {
+  public void removeIgnoreFile() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
     ignoreInfoHolder.update_ignoreFileContent(basicIgnoreFile, null);
 
@@ -108,7 +105,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   @Test
-  public void _050_removeProject() {
+  public void removeProject() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
     ignoreInfoHolder.update_ignoreFileContent(basicIgnoreFile, null);
 
@@ -117,7 +114,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   @Test
-  public void _060_scanAllMissedIgnoreFiles() {
+  public void scanAllMissedIgnoreFiles() {
     DeepCodeIgnoreInfoHolderBase ignoreInfoHolder = getNewIgnoreInfoHolder();
 
     ignoreInfoHolder.scanAllMissedIgnoreFiles(Collections.singletonList(basicIgnoreFile), null);
