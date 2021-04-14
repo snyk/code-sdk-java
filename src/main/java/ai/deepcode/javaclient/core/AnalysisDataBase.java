@@ -101,7 +101,9 @@ public abstract class AnalysisDataBase {
 
   public void removeFilesFromCache(@NotNull Collection<Object> files) {
     try {
-      dcLogger.logInfo("Request to remove from cache " + files.size() + " files: " + files);
+      final List<String> first50FilesName =
+          files.stream().limit(50).map(pdUtils::getFileName).collect(Collectors.toList());
+      dcLogger.logInfo("Request to remove from cache " + files.size() + " files: " + first50FilesName);
       // todo: do we really need mutex here?
       MUTEX.lock();
       dcLogger.logInfo("MUTEX LOCK");
@@ -189,8 +191,10 @@ public abstract class AnalysisDataBase {
       dcLogger.logWarn("updateCachedResultsForFiles requested for empty list of files");
       return;
     }
+    final List<String> first50FilesName =
+            allProjectFiles.stream().limit(50).map(pdUtils::getFileName).collect(Collectors.toList());
     dcLogger.logInfo(
-        "Update requested for " + allProjectFiles.size() + " files: " + allProjectFiles.toString());
+        "Update requested for " + allProjectFiles.size() + " files: " + first50FilesName);
     if (!deepCodeParams.consentGiven(project)) {
       dcLogger.logWarn("Consent check fail! Project: " + pdUtils.getProjectName(project));
       return;
