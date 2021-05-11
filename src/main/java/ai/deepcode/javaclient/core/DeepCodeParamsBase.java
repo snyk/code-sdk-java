@@ -8,6 +8,7 @@ public abstract class DeepCodeParamsBase {
   // Settings
   private boolean isEnable;
   private String apiUrl;
+  private boolean disableSslVerification;
   private boolean useLinter;
   private int minSeverity;
   private String sessionToken;
@@ -19,6 +20,7 @@ public abstract class DeepCodeParamsBase {
   protected DeepCodeParamsBase(
       boolean isEnable,
       String apiUrl,
+      boolean disableSslVerification,
       boolean useLinter,
       int minSeverity,
       String sessionToken,
@@ -26,6 +28,7 @@ public abstract class DeepCodeParamsBase {
       String ideProductName) {
     this.isEnable = isEnable;
     this.apiUrl = apiUrl;
+    this.disableSslVerification = disableSslVerification;
     this.useLinter = useLinter;
     this.minSeverity = minSeverity;
     this.sessionToken = sessionToken;
@@ -78,11 +81,24 @@ public abstract class DeepCodeParamsBase {
   }
 
   public void setApiUrl(@NotNull String apiUrl) {
+    setApiUrl(apiUrl, false);
+  }
+
+  public void setApiUrl(@NotNull String apiUrl, boolean disableSslVerification) {
     if (apiUrl.isEmpty()) apiUrl = "https://www.deepcode.ai/";
     if (!apiUrl.endsWith("/")) apiUrl += "/";
     if (apiUrl.equals(this.apiUrl)) return;
     this.apiUrl = apiUrl;
-    DeepCodeRestApi.setBaseUrl(apiUrl);
+    this.disableSslVerification = disableSslVerification;
+    DeepCodeRestApi.setBaseUrl(apiUrl, disableSslVerification);
+  }
+
+  public boolean isDisableSslVerification() {
+    return disableSslVerification;
+  }
+
+  public void setDisableSslVerification(boolean disableSslVerification) {
+    this.disableSslVerification = disableSslVerification;
   }
 
   public boolean isEnable() {
