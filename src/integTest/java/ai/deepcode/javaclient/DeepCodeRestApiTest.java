@@ -37,8 +37,7 @@ public class DeepCodeRestApiTest {
           + "}\n";
 
   // !!! Will works only with already logged sessionToken
-  private static final String loggedToken = System.getenv("DEEPCODE_API_KEY");
-  private final String deepcodedLoggedToken = System.getenv("DEEPCODE_API_KEY_STAGING");
+  private static final String loggedToken = System.getenv("SNYK_TOKEN");
 
   private static String bundleId = null;
 
@@ -75,12 +74,9 @@ public class DeepCodeRestApiTest {
     System.out.printf(
         "Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n",
         token, status);
-    assertEquals(
-        "Check Session call with newly requested but not yet logged token should return 304 code.",
-        304,
-        status);
 
     token = loggedToken;
+    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
     status = DeepCodeRestApi.checkSession(token).getStatusCode();
     System.out.printf(
         "Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
@@ -94,8 +90,7 @@ public class DeepCodeRestApiTest {
     try {
       doSetBaseUrlTest("", "blabla", 401);
       doSetBaseUrlTest("https://www.google.com/", "blabla", 404);
-      doSetBaseUrlTest("https://www.deepcoded.com/", "blabla", 401);
-      doSetBaseUrlTest("https://www.deepcoded.com/", deepcodedLoggedToken, 200);
+      doSetBaseUrlTest("https://deeproxy.snyk.io/", "blabla", 401);
     } finally {
       DeepCodeRestApi.setBaseUrl("");
     }
@@ -134,6 +129,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _030_createBundle_from_source() {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
+    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
@@ -270,6 +266,7 @@ public class DeepCodeRestApiTest {
   }
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
+    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     final File testFile =
