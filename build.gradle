@@ -83,13 +83,13 @@ publishing {
             from components.java
             pom {
                 description = "Snyk Code Public API package in Java"
-                url = "https://github.com/snyk/snyk-code-client"
+                url = "https://github.com/snyk/code-sdk-java"
                 name = "Snyk Code API Client"
                 developers {
                     developer {
-                        id = "ArtsiomCh"
-                        name = "Artsiom Chapialiou"
-                        email = "achapialiou@gmail.com"
+                        id = "road-runner"
+                        name = "Team Road Runner"
+                        email = "roadrunner@snyk.io"
                     }
                 }
                 licenses {
@@ -99,9 +99,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = "scm:git:git@github.com:snyk/snyk-code-client.git"
-                    developerConnection = "scm:git:git@github.com:snyk/snyk-code-client.git"
-                    url = "https://github.com/snyk/snyk-code-client"
+                    connection = "scm:git:git@github.com:snyk/code-sdk-java.git"
+                    developerConnection = "scm:git:git@github.com:snyk/code-sdk-java.git"
+                    url = "https://github.com/snyk/code-sdk-java"
                 }
             }
         }
