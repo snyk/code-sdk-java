@@ -61,6 +61,7 @@ task integTest(type: Test) {
     shouldRunAfter test
 
     testLogging {
+        exceptionFormat "full"
         showStandardStreams = true
     }
     outputs.upToDateWhen { false }

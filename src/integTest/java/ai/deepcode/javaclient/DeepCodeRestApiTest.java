@@ -20,6 +20,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -38,6 +40,7 @@ public class DeepCodeRestApiTest {
 
   // !!! Will works only with already logged sessionToken
   private static final String loggedToken = System.getenv("SNYK_TOKEN");
+  private static final String baseUrl = System.getenv("DEEPROXY_API_URL");
 
   private static String bundleId = null;
 
@@ -76,7 +79,7 @@ public class DeepCodeRestApiTest {
         token, status);
 
     token = loggedToken;
-    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
+    DeepCodeRestApi.setBaseUrl(baseUrl);
     status = DeepCodeRestApi.checkSession(token).getStatusCode();
     System.out.printf(
         "Check Session call with logged user's token [%1$s] return [%2$d] code.\n", token, status);
@@ -129,7 +132,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _030_createBundle_from_source() {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
-    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
+    DeepCodeRestApi.setBaseUrl(baseUrl);
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     FileContent fileContent = new FileContent("/AnnotatorTest.java", testFileContent);
@@ -266,7 +269,7 @@ public class DeepCodeRestApiTest {
   }
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
-    DeepCodeRestApi.setBaseUrl("https://deeproxy.snyk.io/");
+    DeepCodeRestApi.setBaseUrl(baseUrl);
     int status = DeepCodeRestApi.checkSession(loggedToken).getStatusCode();
     assertEquals(200, status);
     final File testFile =
@@ -425,5 +428,15 @@ public class DeepCodeRestApiTest {
         testFileContent, response.getStatusCode(), response);
     //    assertEquals("DONE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
+  }
+
+  @Test
+  public void setBaseUrl_shouldUseEmptyTrustManager_whenDisableSslVerificationIsTrue() {
+    DeepCodeRestApi.setBaseUrl(baseUrl, true);
+
+    EmptyResponse emptyResponse = DeepCodeRestApi.checkSession(loggedToken);
+
+    assertThat(emptyResponse, notNullValue());
+    assertThat(emptyResponse.getStatusCode(), equalTo(200));
   }
 }
