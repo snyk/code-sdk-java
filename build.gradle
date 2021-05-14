@@ -6,7 +6,7 @@ plugins {
 
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
-version = "2.1.9"
+version = "2.1.10"
 
 repositories {
     mavenCentral()
@@ -61,6 +61,7 @@ task integTest(type: Test) {
     shouldRunAfter test
 
     testLogging {
+        exceptionFormat "full"
         showStandardStreams = true
     }
     outputs.upToDateWhen { false }

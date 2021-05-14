@@ -3,6 +3,11 @@
  */
 package ai.deepcode.javaclient;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.*;
 
@@ -16,6 +21,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.*;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -31,19 +40,51 @@ public final class DeepCodeRestApi {
 
   private static final String API_URL = "https://www.deepcode.ai/";
 
-  private static Retrofit retrofit = buildRetrofit(API_URL);
+  private static Retrofit retrofit = buildRetrofit(API_URL, false);
 
   // Create simple REST adapter which points the baseUrl.
-  private static Retrofit buildRetrofit(String baseUrl) {
-    OkHttpClient client = new OkHttpClient.Builder()
+  private static Retrofit buildRetrofit(String baseUrl, boolean disableSslVerification) {
+    OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .connectTimeout(100, TimeUnit.SECONDS)
             .writeTimeout(100, TimeUnit.SECONDS)
-            .readTimeout(100, TimeUnit.SECONDS).build();
+            .readTimeout(100, TimeUnit.SECONDS);
+    if (disableSslVerification) {
+      X509TrustManager x509TrustManager = buildUnsafeTrustManager();
+      final TrustManager[] trustAllCertificates = new TrustManager[]{ x509TrustManager };
+
+      try {
+        final String sslProtocol = "SSL";
+        SSLContext sslContext = SSLContext.getInstance(sslProtocol);
+        sslContext.init(null, trustAllCertificates, new SecureRandom());
+        SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+        builder.sslSocketFactory(sslSocketFactory, x509TrustManager);
+      } catch (NoSuchAlgorithmException | KeyManagementException e) {
+        //TODO(pavel): extract Retrofit and OkHttpClient into configuration object to simplify API client building.
+        e.printStackTrace();
+      }
+    }
+    OkHttpClient client = builder.build();
     return new Retrofit.Builder()
         .baseUrl(baseUrl + "publicapi/")
-            .client(client)
+        .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build();
+  }
+
+  @NotNull
+  private static X509TrustManager buildUnsafeTrustManager() {
+    return new X509TrustManager() {
+      @Override
+      public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+
+      @Override
+      public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+
+      @Override
+      public X509Certificate[] getAcceptedIssuers() {
+        return new X509Certificate[]{};
+      }
+    };
   }
 
   /**
@@ -53,7 +94,11 @@ public final class DeepCodeRestApi {
    *     #API_URL}
    */
   public static void setBaseUrl(@Nullable String baseUrl) {
-    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl);
+    setBaseUrl(baseUrl, false);
+  }
+
+  public static void setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification) {
+    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl, disableSslVerification);
   }
 
   private interface LoginCall {
