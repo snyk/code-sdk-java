@@ -53,7 +53,8 @@ public final class DeepCodeRestApi {
       final TrustManager[] trustAllCertificates = new TrustManager[]{ x509TrustManager };
 
       try {
-        SSLContext sslContext = SSLContext.getInstance("SSL");
+        final String sslProtocol = "SSL";
+        SSLContext sslContext = SSLContext.getInstance(sslProtocol);
         sslContext.init(null, trustAllCertificates, new SecureRandom());
         SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         builder.sslSocketFactory(sslSocketFactory, x509TrustManager);

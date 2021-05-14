@@ -72,12 +72,6 @@ public class DeepCodeRestApiTest {
     System.out.printf("Check Session call with token [%1$s] return [%2$d] code.\n", token, status);
     assertEquals(401, status);
 
-    token = DeepCodeRestApi.newLogin(userAgent).getSessionToken();
-    status = DeepCodeRestApi.checkSession(token).getStatusCode();
-    System.out.printf(
-        "Check Session call with newly requested but not yet logged token [%1$s] return [%2$d] code.\n",
-        token, status);
-
     token = loggedToken;
     DeepCodeRestApi.setBaseUrl(baseUrl);
     status = DeepCodeRestApi.checkSession(token).getStatusCode();
