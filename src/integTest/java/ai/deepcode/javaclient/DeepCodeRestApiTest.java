@@ -49,13 +49,11 @@ public class DeepCodeRestApiTest {
   @Test
   public void _010_newLogin() {
     System.out.println("\n--------------New Login----------------\n");
-    LoginResponse response = null;
-    response = DeepCodeRestApi.newLogin(userAgent);
-    assertEquals(200, response.getStatusCode());
-    assertTrue(response.getLoginURL().contains(response.getSessionToken()));
-    System.out.printf(
-        "New login request passed with returned: \nsession token: %1$s \nlogin URL: %2$s\n",
-        response.getSessionToken(), response.getLoginURL());
+    try {
+      DeepCodeRestApi.newLogin(userAgent);
+    } catch (UnsupportedOperationException e) {
+      System.out.printf(e.getMessage());
+    }
   }
 
   @Test
@@ -155,17 +153,6 @@ public class DeepCodeRestApiTest {
         response.getStatusCode());
     System.out.printf(
         "Create Bundle call with malformed token [%1$s] is not accepted by server with Status code [%2$d].\n",
-        brokenToken, response.getStatusCode());
-
-    final String incompleteLoginToken = DeepCodeRestApi.newLogin(userAgent).getSessionToken();
-    response = DeepCodeRestApi.createBundle(incompleteLoginToken, files);
-    assertNotNull(response);
-    assertEquals(
-        "Create Bundle call with incomplete login token should not be accepted by server",
-        401,
-        response.getStatusCode());
-    System.out.printf(
-        "Create Bundle call with incomplete login token is not accepted by server with Status code [%2$d].\n",
         brokenToken, response.getStatusCode());
 
     // seems to be a bug on server: it returns 200

@@ -1,3 +1,6 @@
+## [2.1.11] - 2020-10-05
+- added param: "waiting results" timeout. 
+
 ## [2.0.18] - 2020-10-05
 - fix exception when Null markers received. 
 

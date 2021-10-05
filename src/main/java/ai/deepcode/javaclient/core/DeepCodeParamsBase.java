@@ -3,6 +3,8 @@ package ai.deepcode.javaclient.core;
 import ai.deepcode.javaclient.DeepCodeRestApi;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 public abstract class DeepCodeParamsBase {
 
   // Settings
@@ -16,6 +18,7 @@ public abstract class DeepCodeParamsBase {
   // Inner params
   private String loginUrl;
   private String ideProductName;
+  private Supplier<Long> getTimeoutForGettingAnalysesMs;
 
   protected DeepCodeParamsBase(
       boolean isEnable,
@@ -25,7 +28,9 @@ public abstract class DeepCodeParamsBase {
       int minSeverity,
       String sessionToken,
       String loginUrl,
-      String ideProductName) {
+      String ideProductName,
+      Supplier<Long> getTimeoutForGettingAnalysesMs
+  ) {
     this.isEnable = isEnable;
     this.apiUrl = apiUrl;
     this.disableSslVerification = disableSslVerification;
@@ -34,6 +39,7 @@ public abstract class DeepCodeParamsBase {
     this.sessionToken = sessionToken;
     this.loginUrl = loginUrl;
     this.ideProductName = ideProductName;
+    this.getTimeoutForGettingAnalysesMs = getTimeoutForGettingAnalysesMs;
   }
 
   public void clearLoginParams() {
@@ -115,5 +121,9 @@ public abstract class DeepCodeParamsBase {
 
   public String getIdeProductName() {
     return ideProductName;
+  }
+
+  public long getTimeoutForGettingAnalysesMs() {
+    return getTimeoutForGettingAnalysesMs.get();
   }
 }
