@@ -38,7 +38,7 @@ public final class DeepCodeRestApi {
 
   private DeepCodeRestApi() {}
 
-  private static final String API_URL = "https://www.deepcode.ai/";
+  private static final String API_URL = "https://deeproxy.snyk.io/";
 
   private static Retrofit retrofit = buildRetrofit(API_URL, false);
 
@@ -113,26 +113,8 @@ public final class DeepCodeRestApi {
    * @return {@link LoginResponse} instance
    */
   @NotNull
-  public static LoginResponse newLogin(@NotNull String userAgent) {
-    final LoginCall loginCall = retrofit.create(LoginCall.class);
-    try {
-      final SourceString source = new SourceString(userAgent);
-      final Response<LoginResponse> retrofitResponse = loginCall.doNewLogin(source).execute();
-      LoginResponse result = retrofitResponse.body();
-      if (result == null) return new LoginResponse();
-      result.setStatusCode(retrofitResponse.code());
-      switch (retrofitResponse.code()) {
-        case 200:
-          result.setStatusDescription("The new login request was successful");
-          break;
-        default:
-          result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-          break;
-      }
-      return result;
-    } catch (IOException e) {
-      return new LoginResponse();
-    }
+  public static LoginResponse newLogin(@NotNull String userAgent) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException("login request is not handled anymore");
   }
 
   private interface CheckSessionCall {

@@ -548,8 +548,8 @@ public abstract class AnalysisDataBase {
       List<String> filesToAnalyse) {
     GetAnalysisResponse response;
     int counter = 0;
-    final int timeout = 100; // seconds
-    final int attempts = timeout * 1000 / pdUtils.DEFAULT_DELAY;
+    final long timeout = deepCodeParams.getTimeoutForGettingAnalysesMs();
+    final long attempts = timeout / pdUtils.DEFAULT_DELAY;
     do {
       if (counter > 0) pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
       response =
@@ -566,19 +566,20 @@ public abstract class AnalysisDataBase {
         return new GetAnalysisResponse();
 
       double responseProgress = response.getProgress();
-      if (responseProgress <= 0 || responseProgress > 1)
+      if (responseProgress <= 0 || responseProgress > 1) {
         responseProgress = ((double) counter) / attempts;
+      }
       pdUtils.progressSetFraction(progress, responseProgress);
       pdUtils.progressSetText(
           progress, WAITING_FOR_ANALYSIS_TEXT + (int) (responseProgress * 100) + "% done");
 
       if (counter >= attempts) {
         dcLogger.logWarn("Timeout expire for waiting analysis results.");
-        /*
-                DeepCodeNotifications.showWarn(
-                    "Can't get analysis results from the server. Network or server internal error. Please, try again later.",
-                    project);
-        */
+        pdUtils.showWarn(
+            "Can't get analysis results from the server. Timeout of " + timeout/1000 + " sec. is reached." +
+                    " Please, increase timeout or try again later.",
+            project,
+            false);
         break;
       }
 
