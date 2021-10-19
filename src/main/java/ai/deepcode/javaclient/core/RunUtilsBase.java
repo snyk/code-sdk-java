@@ -320,6 +320,7 @@ public abstract class RunUtilsBase {
       analysisData.updateCachedResultsForFiles(project, allSupportedFilesInProject, progress);
 
     } finally {
+      projectsWithFullRescanRequested.remove(project);
       updateAnalysisResultsUIPresentation(
           project, analysisData.getAllFilesWithSuggestions(project));
     }

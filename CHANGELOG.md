@@ -1,3 +1,6 @@
+## [2.1.12] - 2020-10-17
+- fix: isFullRescanRequested() should be False after rescan finished and before UI updates.
+
 ## [2.1.11] - 2020-10-05
 - added param: "waiting results" timeout. 
 
