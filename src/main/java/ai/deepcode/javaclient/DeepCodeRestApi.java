@@ -391,35 +391,24 @@ public final class DeepCodeRestApi {
     @POST("analysis/{bundleId}")
     Call<GetAnalysisResponse> doGetAnalysis(
         @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId,
-        @Query("severity") Integer severity,
-        @QueryName String linters,
         @Body GetAnalysisRequest filesToAnalyse);
   }
 
   /**
    * Starts a new bundle analysis or checks its current status and available results.
    *
-   * @return {@link GetAnalysisResponse} instance}
+   * @return {@link GetAnalysisResponse} instance
    */
   @NotNull
-  public static GetAnalysisResponse getAnalysis(
-      String token,
-      String bundleId,
-      Integer severity,
-      boolean useLinters,
-      List<String> filesToAnalyse) {
+  public static GetAnalysisResponse getAnalysis(String token, String bundleId, Integer severity) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
-          getAnalysisCall
-              .doGetAnalysis(
-                  token,
-                  bundleId,
-                  severity,
-                  (useLinters) ? "linters" : null,
-                  new GetAnalysisRequest(filesToAnalyse))
-              .execute();
+              getAnalysisCall
+                      .doGetAnalysis(
+                              token,
+                              new GetAnalysisRequest(new GetAnalysisRequestKey(bundleId), severity, true))
+                      .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();
       result.setStatusCode(retrofitResponse.code());

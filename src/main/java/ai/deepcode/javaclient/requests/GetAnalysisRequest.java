@@ -3,18 +3,37 @@ package ai.deepcode.javaclient.requests;
 import java.util.List;
 
 public class GetAnalysisRequest {
-  private List<String> files;
+  private GetAnalysisRequestKey key;
+  private int severity = 1;
+  private boolean legacy = true; // SARIF is non legacy
 
-  /**
-   * @param files List of FilePaths
-   */
-  public GetAnalysisRequest(List<String> files) {
-    super();
-    this.files = files;
+  public GetAnalysisRequest(GetAnalysisRequestKey key, Integer severity, boolean legacy) {
+    this.key = key;
+    this.severity = severity;
+    this.legacy = legacy;
   }
 
-  public List<String> getFiles() {
-    return files;
+  public GetAnalysisRequestKey getKey() {
+    return key;
   }
 
+  public void setKey(GetAnalysisRequestKey key) {
+    this.key = key;
+  }
+
+  public int getSeverity() {
+    return severity;
+  }
+
+  public void setSeverity(int severity) {
+    this.severity = severity;
+  }
+
+  public boolean isLegacy() {
+    return legacy;
+  }
+
+  public void setLegacy(boolean legacy) {
+    this.legacy = legacy;
+  }
 }
