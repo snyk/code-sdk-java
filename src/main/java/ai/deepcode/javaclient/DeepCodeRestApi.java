@@ -34,8 +34,6 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DeepCodeRestApi {
 
-  //  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
-
   private DeepCodeRestApi() {}
 
   private static final String API_URL = "https://deeproxy.snyk.io/";
@@ -338,7 +336,7 @@ public final class DeepCodeRestApi {
 
   private interface UploadFilesCall {
     @retrofit2.http.Headers("Content-Type: application/json;charset=utf-8")
-    @POST("file/{bundleId}")
+    @POST("bundle/{bundleId}")
     Call<Void> doUploadFiles(
         @Header("Session-Token") String token,
         @Path(value = "bundleId", encoded = true) String bundleId,

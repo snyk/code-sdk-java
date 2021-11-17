@@ -1,8 +1,8 @@
 package ai.deepcode.javaclient.requests;
 
 public class FileHash2ContentRequest {
-  private String fileHash;
-  private String fileContent;
+  private final String fileHash;
+  private final String fileContent;
 
   public FileHash2ContentRequest(String fileHash, String fileContent) {
     super();
