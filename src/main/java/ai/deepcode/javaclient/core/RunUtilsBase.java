@@ -59,7 +59,6 @@ public abstract class RunUtilsBase {
     if (!reuseCurrentProgress(project, title, wrappedConsumer)) {
       doBackgroundRun(project, title, wrappedConsumer);
     }
-    ;
   }
 
   /**
@@ -73,11 +72,6 @@ public abstract class RunUtilsBase {
   /** Should implement background task creation with call of progressConsumer() inside Job.run() */
   protected abstract void doBackgroundRun(
       @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer);
-  // indicator.setIndeterminate(false);
-  // "DeepCode: " + title
-
-  // protected abstract String getProgressPresentation(@NotNull Object progress);
-  // progress.toString()
 
   private static final Map<Object, Set<Object>> mapProject2Progresses = new ConcurrentHashMap<>();
 
@@ -85,8 +79,6 @@ public abstract class RunUtilsBase {
     return mapProject2Progresses.computeIfAbsent(project, p -> new HashSet<>());
   }
 
-  // ??? list of all running background tasks
-  // com.intellij.openapi.wm.ex.StatusBarEx#getBackgroundProcesses
   // todo? Disposer.register(project, this)
   // https://intellij-support.jetbrains.com/hc/en-us/community/posts/360008241759/comments/360001689399
   public void cancelRunningIndicators(@NotNull Object project) {
@@ -102,11 +94,8 @@ public abstract class RunUtilsBase {
   }
 
   protected abstract void cancelProgress(@NotNull Object progress);
-  // ProgressIndicator.cancel()
 
   protected abstract void bulkModeForceUnset(@NotNull Object project);
-  // in case any indicator holds Bulk mode process
-  // BulkMode.forceUnset(project);
 
   private static final Map<Object, Object> mapFileProcessed2CancellableProgress =
       new ConcurrentHashMap<>();
@@ -129,6 +118,7 @@ public abstract class RunUtilsBase {
             + pdUtils.getFileName(file)
             + " with progressConsumer "
             + runId);
+
     // can't use `file` as Id cause in Idea same file may have different PsiFile instances during
     // lifetime
     final String fileId = pdUtils.getDeepCodedFilePath(file);
@@ -143,7 +133,6 @@ public abstract class RunUtilsBase {
             + runId);
 
     final Object project = pdUtils.getProject(file);
-    //analysisData.setUpdateInProgress(project);
 
     doBackgroundRun(
         project,
@@ -209,7 +198,6 @@ public abstract class RunUtilsBase {
   private static final Set<Long> bulkModeRequests = ConcurrentHashMap.newKeySet();
 
   protected abstract void bulkModeUnset(@NotNull Object project);
-  // BulkMode.unset(project);
 
   public void rescanInBackgroundCancellableDelayed(
       @NotNull Object project, int delayMilliseconds, boolean inBulkMode) {

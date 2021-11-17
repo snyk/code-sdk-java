@@ -434,7 +434,7 @@ public abstract class AnalysisDataBase {
         brokenMissingFilesCount++;
         continue;
       }
-      final long fileSize = pdUtils.getFileSize(file); // .getVirtualFile().getLength();
+      final long fileSize = pdUtils.getFileSize(file);
       if (fileChunkSize + fileSize > MAX_BUNDLE_SIZE) {
         dcLogger.logInfo("Files-chunk size: " + fileChunkSize);
         doUploadFiles(project, filesChunk, bundleId, progress);
