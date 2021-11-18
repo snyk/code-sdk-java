@@ -4,7 +4,7 @@ import java.util.List;
 
 public class GetAnalysisRequest {
   private GetAnalysisRequestKey key;
-  private int severity = 1;
+  private Integer severity = 1;
   private boolean legacy = true; // SARIF is non legacy
 
   public GetAnalysisRequest(GetAnalysisRequestKey key, Integer severity, boolean legacy) {

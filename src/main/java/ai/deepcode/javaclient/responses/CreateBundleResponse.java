@@ -4,32 +4,26 @@ import java.util.Collections;
 import java.util.List;
 
 public class CreateBundleResponse extends EmptyResponse {
-  private final String bundleId;
+  private final String bundleHash;
   private final List<String> missingFiles;
-  private final String uploadURL;
 
   public CreateBundleResponse() {
     super();
-    this.bundleId = "";
+    this.bundleHash = "";
     this.missingFiles = Collections.emptyList();
-    this.uploadURL = "";
   }
 
-  public CreateBundleResponse(String bundleId, List<String> missingFiles, String uploadURL) {
-    this.bundleId = bundleId;
+  public CreateBundleResponse(String bundleHash, List<String> missingFiles, String uploadURL) {
+    this.bundleHash = bundleHash;
     this.missingFiles = missingFiles;
-    this.uploadURL = uploadURL;
   }
 
-  public String getBundleId() {
-    return bundleId;
+  public String getBundleHash() {
+    return bundleHash;
   }
 
   public List<String> getMissingFiles() {
     return missingFiles;
   }
 
-  public String getUploadURL() {
-    return uploadURL;
-  }
 }

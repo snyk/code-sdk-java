@@ -3,7 +3,7 @@ package ai.deepcode.javaclient.requests;
 import java.util.List;
 import java.util.Map;
 
-public class ExtendBundleRequest {
+public class ExtendBundleRequest implements IExtendBundleRequest {
   private Map<String,String> files;
   private List<String> removedFiles;
 

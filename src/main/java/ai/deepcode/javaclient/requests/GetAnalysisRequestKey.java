@@ -3,11 +3,13 @@ package ai.deepcode.javaclient.requests;
 import java.util.Objects;
 
 public class GetAnalysisRequestKey {
-    private String type = "File";
+    private String type = "file";
     private String hash;
+    private String[] limitToFiles;
 
-    public GetAnalysisRequestKey(String hash) {
+    public GetAnalysisRequestKey(String hash, String[] limitToFiles) {
         this.hash = hash;
+        this.limitToFiles = limitToFiles;
     }
 
     @Override
@@ -37,5 +39,9 @@ public class GetAnalysisRequestKey {
 
     public String getHash() {
         return hash;
+    }
+
+    public String[] getLimitToFiles() {
+        return limitToFiles;
     }
 }
