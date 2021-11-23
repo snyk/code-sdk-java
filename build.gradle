@@ -51,8 +51,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.2'
 
     testImplementation 'junit:junit:4.13.2'
-
-    integTestImplementation "junit:junit:4.12"
+    integTestImplementation 'junit:junit:4.13.2'
 }
 
 task integTest(type: Test) {

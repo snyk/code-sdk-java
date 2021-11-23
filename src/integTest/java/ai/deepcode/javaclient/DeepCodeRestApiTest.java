@@ -337,20 +337,32 @@ public class DeepCodeRestApiTest {
   }
 
   @Test
-  public void _090_getAnalysis() {
+  public void _090_getAnalysis() throws InterruptedException {
     System.out.println("\n--------------Get Analysis----------------\n");
     assertNotNull(
         "`bundleId` should be initialized at `_030_createBundle_from_source()`", bundleId);
     final String deepcodedFilePath =
         createFileHashRequest(null).keySet().stream().findFirst().orElseThrow();
     final List<String> analysedFiles = Collections.singletonList(deepcodedFilePath);
-    GetAnalysisResponse response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, analysedFiles);
+    GetAnalysisResponse response = doAnalysisAndWait(analysedFiles, null);
     assertAndPrintGetAnalysisResponse(response);
     boolean resultsEmpty = response.getSuggestions() == null || response.getSuggestions().isEmpty();
     assertFalse("Analysis results must not be empty", resultsEmpty);
     System.out.println("\n---- With `severity=2` param:\n");
+    response = doAnalysisAndWait(analysedFiles, 2);
     assertAndPrintGetAnalysisResponse(
-        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, analysedFiles));
+        response);
+  }
+
+  @NotNull
+  private GetAnalysisResponse doAnalysisAndWait(List<String> analysedFiles, Integer severity) throws InterruptedException {
+    GetAnalysisResponse response = null;
+    for (int i = 0; i < 120; i++) {
+      response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, severity, analysedFiles);
+      if (response.getStatus().equals("COMPLETE")) break;
+      Thread.sleep(1000);
+    }
+    return response;
   }
 
   private void assertAndPrintGetAnalysisResponse(GetAnalysisResponse response) {
