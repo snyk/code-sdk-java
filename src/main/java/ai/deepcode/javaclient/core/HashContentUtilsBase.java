@@ -14,7 +14,7 @@ public abstract class HashContentUtilsBase {
 
   protected HashContentUtilsBase(@NotNull PlatformDependentUtilsBase platformDependentUtils){
     this.platformDependentUtils = platformDependentUtils;
-  };
+  }
   
   private static final Map<Object, String> mapFile2Hash = new ConcurrentHashMap<>();
   private static final Map<Object, String> mapFile2Content = new ConcurrentHashMap<>();
