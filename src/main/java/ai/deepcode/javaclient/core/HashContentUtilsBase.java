@@ -61,7 +61,7 @@ public abstract class HashContentUtilsBase {
     return !newHash.equals(oldHash);
   }
 
-  String getHash(@NotNull Object file) {
+  public String getHash(@NotNull Object file) {
     return mapFile2Hash.computeIfAbsent(file, this::doGetHash);
   }
 
@@ -69,7 +69,7 @@ public abstract class HashContentUtilsBase {
     return doGetHash(getFileContent(file));
   }
 
-  private String doGetHash(@NotNull String fileText) {
+  private static String doGetHash(@NotNull String fileText) {
     MessageDigest messageDigest;
     try {
       messageDigest = MessageDigest.getInstance("SHA-256");

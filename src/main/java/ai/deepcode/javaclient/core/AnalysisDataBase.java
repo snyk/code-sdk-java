@@ -59,8 +59,6 @@ public abstract class AnalysisDataBase {
    *
    * <p>Look into cached results ONLY.
    *
-   * @param files
-   * @return
    */
   @NotNull
   public Map<Object, List<SuggestionForFile>> getAnalysis(@NotNull Collection<Object> files) {
@@ -80,7 +78,7 @@ public abstract class AnalysisDataBase {
     }
     if (!brokenKeys.isEmpty()) {
       dcLogger.logWarn(
-          "Suggestions not found for " + brokenKeys.size() + " files: " + brokenKeys.toString());
+          "Suggestions not found for " + brokenKeys.size() + " files: " + brokenKeys);
     }
     return result;
   }
@@ -175,7 +173,7 @@ public abstract class AnalysisDataBase {
   public void waitForUpdateAnalysisFinish(@NotNull Object project, @Nullable Object progress) {
     while (isUpdateAnalysisInProgress(project)) {
       // delay should be less or equal to runInBackgroundCancellable delay
-      pdUtils.delay(pdUtils.DEFAULT_DELAY_SMALL, progress);
+      pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY_SMALL, progress);
     }
   }
 
@@ -225,11 +223,11 @@ public abstract class AnalysisDataBase {
             "Nothing to update for "
                 + allProjectFiles.size()
                 + " files: "
-                + allProjectFiles.toString());
+                + allProjectFiles);
       }
       if (!filesToRemove.isEmpty()) {
         dcLogger.logInfo(
-            "Files to remove: " + filesToRemove.size() + " files: " + filesToRemove.toString());
+            "Files to remove: " + filesToRemove.size() + " files: " + filesToRemove);
       }
       mapFile2Suggestions.putAll(
           retrieveSuggestions(project, filesToProceed, filesToRemove, progress));
@@ -322,7 +320,7 @@ public abstract class AnalysisDataBase {
     pdUtils.progressSetText(progress, PREPARE_FILES_TEXT);
     dcLogger.logInfo(PREPARE_FILES_TEXT);
     pdUtils.progressCheckCanceled(progress);
-    Map<String, String> mapPath2Hash = new HashMap<>();
+    FileHashRequest hashRequest = new FileHashRequest();
     long sizePath2Hash = 0;
     int fileCounter = 0;
     int totalFiles = filesToProceed.size();
@@ -339,20 +337,20 @@ public abstract class AnalysisDataBase {
       if (fileCounter == 1)
         dcLogger.logInfo("First file to proceed: \npath = " + path + "\nhash = " + hash);
 
-      mapPath2Hash.put(path, hash);
-      sizePath2Hash += (path.length() + hash.length()) * 2; // rough estimation of bytes occupied
+      hashRequest.put(path, hash);
+      sizePath2Hash += (path.length() + hash.length()) * 2L; // rough estimation of bytes occupied
       if (sizePath2Hash > MAX_BUNDLE_SIZE) {
         CreateBundleResponse tempBundleResponse =
-            makeNewBundle(project, mapPath2Hash, Collections.emptyList());
+            makeNewBundle(project, hashRequest, Collections.emptyList());
         sizePath2Hash = 0;
-        mapPath2Hash.clear();
+        hashRequest.clear();
       }
     }
     // todo break removeFiles in chunks less then MAX_BANDLE_SIZE
     //  needed ?? we do full rescan for large amount of files to remove
-    CreateBundleResponse createBundleResponse = makeNewBundle(project, mapPath2Hash, filesToRemove);
+    CreateBundleResponse createBundleResponse = makeNewBundle(project, hashRequest, filesToRemove);
 
-    final String bundleId = createBundleResponse.getBundleId();
+    final String bundleId = createBundleResponse.getBundleHash();
 
     List<String> missingFiles = createBundleResponse.getMissingFiles();
     dcLogger.logInfo(
@@ -467,13 +465,12 @@ public abstract class AnalysisDataBase {
 
   private CreateBundleResponse makeNewBundle(
       @NotNull Object project,
-      @NotNull Map<String, String> mapPath2Hash,
+      @NotNull FileHashRequest request,
       @NotNull Collection<Object> filesToRemove) {
-    final FileHashRequest fileHashRequest = new FileHashRequest(mapPath2Hash);
     final String parentBundleId = mapProject2BundleId.getOrDefault(project, "");
     if (!parentBundleId.isEmpty()
         && !filesToRemove.isEmpty()
-        && mapPath2Hash.isEmpty()
+        && request.isEmpty()
         && filesToRemove.containsAll(cachedFilesOfProject(project))) {
       dcLogger.logWarn(
           "Attempt to Extending a bundle by removing all the parent bundle's files: "
@@ -485,7 +482,7 @@ public abstract class AnalysisDataBase {
         (parentBundleId.isEmpty()
                 ? "Creating new Bundle with "
                 : "Extending existing Bundle [" + parentBundleId + "] with ")
-            + mapPath2Hash.size()
+            + request.size()
             + " files"
             + (removedFiles.isEmpty() ? "" : " and remove " + removedFiles.size() + " files");
     dcLogger.logInfo(message);
@@ -494,15 +491,15 @@ public abstract class AnalysisDataBase {
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
       bundleResponse =
-          DeepCodeRestApi.createBundle(deepCodeParams.getSessionToken(), fileHashRequest);
+          DeepCodeRestApi.createBundle(deepCodeParams.getSessionToken(), request);
     else {
       bundleResponse =
           DeepCodeRestApi.extendBundle(
               deepCodeParams.getSessionToken(),
               parentBundleId,
-              new ExtendBundleRequest(fileHashRequest.getFiles(), removedFiles));
+              new ExtendBundleRequest(request, removedFiles));
     }
-    String newBundleId = bundleResponse.getBundleId();
+    String newBundleId = bundleResponse.getBundleHash();
     // By man: "Extending a bundle by removing all the parent bundle's files is not allowed."
     // In reality new bundle returned with next bundleID:
     // .../DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000
@@ -514,7 +511,7 @@ public abstract class AnalysisDataBase {
     isNotSucceed(project, bundleResponse, "Bad Create/Extend Bundle request: ");
     // just make new bundle in case of 404 Parent bundle has expired
     return (bundleResponse.getStatusCode() == 404)
-        ? makeNewBundle(project, mapPath2Hash, filesToRemove)
+        ? makeNewBundle(project, request, filesToRemove)
         : bundleResponse;
   }
 
@@ -525,18 +522,18 @@ public abstract class AnalysisDataBase {
       @NotNull Object progress) {
     dcLogger.logInfo("Uploading " + psiFiles.size() + " files... ");
     if (psiFiles.isEmpty()) return;
-    List<FileHash2ContentRequest> listHash2Content = new ArrayList<>(psiFiles.size());
+
+    Map<String, Object> files = new HashMap<>();
     for (Object psiFile : psiFiles) {
       pdUtils.progressCheckCanceled(progress);
-      listHash2Content.add(
-          new FileHash2ContentRequest(
+      files.put(pdUtils.getFilePath(psiFile), new FileHash2ContentRequest(
               hashContentUtils.getHash(psiFile), hashContentUtils.getFileContent(psiFile)));
     }
-    if (listHash2Content.isEmpty()) return;
 
     // todo make network request in parallel with collecting data
     EmptyResponse uploadFilesResponse =
-        DeepCodeRestApi.UploadFiles(deepCodeParams.getSessionToken(), bundleId, listHash2Content);
+        DeepCodeRestApi.extendBundle(deepCodeParams.getSessionToken(), bundleId,
+                new ExtendBundleRequest(files, Collections.emptyList()));
     isNotSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
   }
 
@@ -549,15 +546,14 @@ public abstract class AnalysisDataBase {
     GetAnalysisResponse response;
     int counter = 0;
     final long timeout = deepCodeParams.getTimeoutForGettingAnalysesMs();
-    final long attempts = timeout / pdUtils.DEFAULT_DELAY;
+    final long attempts = timeout / PlatformDependentUtilsBase.DEFAULT_DELAY;
     do {
-      if (counter > 0) pdUtils.delay(pdUtils.DEFAULT_DELAY, progress);
+      if (counter > 0) pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY, progress);
       response =
           DeepCodeRestApi.getAnalysis(
               deepCodeParams.getSessionToken(),
               bundleId,
               deepCodeParams.getMinSeverity(),
-              deepCodeParams.useLinter(),
               filesToAnalyse);
 
       pdUtils.progressCheckCanceled(progress);
@@ -717,11 +713,6 @@ public abstract class AnalysisDataBase {
         endCol,
         markers,
         position.getFile());
-  }
-
-  private FileContent createFileContent(Object file) {
-    return new FileContent(
-        pdUtils.getDeepCodedFilePath(file), hashContentUtils.getFileContent(file));
   }
 
   public Set<Object> getAllFilesWithSuggestions(@NotNull final Object project) {
