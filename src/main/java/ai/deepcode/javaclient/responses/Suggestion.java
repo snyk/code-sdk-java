@@ -16,20 +16,21 @@ public class Suggestion {
   private final List<String> categories;
   private final List<String> tags;
   private final List<String> cwe;
+  private final String leadURL;
 
   public Suggestion(
-      String id,
-      String rule,
-      String message,
-      String title,
-      String text,
-      int severity,
-      int repoDatasetSize,
-      List<String> exampleCommitDescriptions,
-      List<ExampleCommitFix> exampleCommitFixes,
-      List<String> categories,
-      List<String> tags,
-      List<String> cwe) {
+          String id,
+          String rule,
+          String message,
+          String title,
+          String text,
+          int severity,
+          int repoDatasetSize,
+          List<String> exampleCommitDescriptions,
+          List<ExampleCommitFix> exampleCommitFixes,
+          List<String> categories,
+          List<String> tags,
+          List<String> cwe, String leadURL) {
     super();
     this.id = id;
     this.rule = rule;
@@ -43,6 +44,7 @@ public class Suggestion {
     this.categories = categories;
     this.tags = tags;
     this.cwe = cwe;
+    this.leadURL = leadURL;
   }
 
   public String getId() {
@@ -120,5 +122,9 @@ public class Suggestion {
 
   public List<String> getCwe() {
     return cwe;
+  }
+
+  public String getLeadURL() {
+    return leadURL;
   }
 }
