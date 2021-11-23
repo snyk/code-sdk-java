@@ -10,7 +10,12 @@ public class GetAnalysisRequest {
   private boolean legacy = true;
 
   /**
-   * @param files List of FilePaths
+   *
+   * @param bundleHash
+   * @param limitToFiles
+   * @param severity
+   * @param prioritized
+   * @param legacy
    */
   public GetAnalysisRequest(String bundleHash, List<String>limitToFiles, Integer severity, boolean prioritized, boolean legacy) {
     this.key = new GetAnalysisKey(bundleHash, limitToFiles);
