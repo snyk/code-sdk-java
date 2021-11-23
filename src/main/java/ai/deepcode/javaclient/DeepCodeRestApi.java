@@ -12,6 +12,7 @@ import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.*;
 
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
@@ -34,20 +35,28 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DeepCodeRestApi {
 
-  //  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
-
   private DeepCodeRestApi() {}
 
   private static final String API_URL = "https://deeproxy.snyk.io/";
 
-  private static Retrofit retrofit = buildRetrofit(API_URL, false);
+  private static Retrofit retrofit = buildRetrofit(API_URL, false, false);
 
   // Create simple REST adapter which points the baseUrl.
-  private static Retrofit buildRetrofit(String baseUrl, boolean disableSslVerification) {
+  private static Retrofit buildRetrofit(String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+    HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+    // set your desired log level
+    if (requestLogging) {
+      logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+    } else {
+      logging.setLevel(HttpLoggingInterceptor.Level.NONE);
+    }
+
     OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .connectTimeout(100, TimeUnit.SECONDS)
             .writeTimeout(100, TimeUnit.SECONDS)
-            .readTimeout(100, TimeUnit.SECONDS);
+            .readTimeout(100, TimeUnit.SECONDS)
+            .addInterceptor(logging);
+
     if (disableSslVerification) {
       X509TrustManager x509TrustManager = buildUnsafeTrustManager();
       final TrustManager[] trustAllCertificates = new TrustManager[]{ x509TrustManager };
@@ -63,6 +72,7 @@ public final class DeepCodeRestApi {
         e.printStackTrace();
       }
     }
+
     OkHttpClient client = builder.build();
     return new Retrofit.Builder()
         .baseUrl(baseUrl)
@@ -94,11 +104,13 @@ public final class DeepCodeRestApi {
    *     #API_URL}
    */
   public static void setBaseUrl(@Nullable String baseUrl) {
-    setBaseUrl(baseUrl, false);
+    setBaseUrl(baseUrl, false, false);
   }
 
-  public static Retrofit setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification) {
-    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl, disableSslVerification);
+  public static Retrofit setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
+            disableSslVerification,
+            requestLogging);
     return retrofit;
   }
 

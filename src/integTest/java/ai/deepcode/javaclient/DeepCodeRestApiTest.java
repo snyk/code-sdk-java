@@ -3,7 +3,10 @@
  */
 package ai.deepcode.javaclient;
 
-import ai.deepcode.javaclient.requests.*;
+import ai.deepcode.javaclient.requests.ExtendBundleRequest;
+import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
+import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.EmptyResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
@@ -58,7 +61,7 @@ public class DeepCodeRestApiTest {
   }
 
   private void doSetBaseUrlTest(String baseUrl, int expectedStatusCode) {
-    DeepCodeRestApi.setBaseUrl(baseUrl);
+    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
     EmptyResponse response = DeepCodeRestApi.checkBundle("blabla", "irrelevant");
     int status = response.getStatusCode();
     String description = response.getStatusDescription();
@@ -89,7 +92,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _030_createBundle_from_source() throws NoSuchAlgorithmException {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
-    DeepCodeRestApi.setBaseUrl(baseUrl);
+    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
     CreateBundleResponse response = createBundleFromSource(loggedToken);
     assertNotNull(response);
     System.out.printf(
@@ -204,7 +207,7 @@ public class DeepCodeRestApiTest {
   }
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
-    DeepCodeRestApi.setBaseUrl(baseUrl);
+    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
     final File testFile =
         new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     String absolutePath = testFile.getAbsolutePath();
@@ -341,11 +344,10 @@ public class DeepCodeRestApiTest {
     final String deepcodedFilePath =
         createFileHashRequest(null).keySet().stream().findFirst().orElseThrow();
     final List<String> analysedFiles = Collections.singletonList(deepcodedFilePath);
-    assertAndPrintGetAnalysisResponse(
-        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, analysedFiles));
-    System.out.println("\n---- With `Linters` param:\n");
-    assertAndPrintGetAnalysisResponse(
-        DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, analysedFiles));
+    GetAnalysisResponse response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, null, analysedFiles);
+    assertAndPrintGetAnalysisResponse(response);
+    boolean resultsEmpty = response.getSuggestions() == null || response.getSuggestions().isEmpty();
+    assertFalse("Analysis results must not be empty", resultsEmpty);
     System.out.println("\n---- With `severity=2` param:\n");
     assertAndPrintGetAnalysisResponse(
         DeepCodeRestApi.getAnalysis(loggedToken, bundleId, 2, analysedFiles));
@@ -356,7 +358,7 @@ public class DeepCodeRestApiTest {
     System.out.printf(
         "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s \n%3$s\n",
         testFileContent, response.getStatusCode(), response);
-    //    assertEquals("DONE", response.getStatus());
+    assertEquals("COMPLETE", response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
   }
 

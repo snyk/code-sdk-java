@@ -590,7 +590,7 @@ public abstract class AnalysisDataBase {
       }
 
       counter++;
-    } while (!response.getStatus().equals("DONE")
+    } while (!response.getStatus().equals("COMPLETE")
     // !!!! keep commented in production, for debug only: to emulate long processing
     // || counter < 10
     );
@@ -604,22 +604,22 @@ public abstract class AnalysisDataBase {
       GetAnalysisResponse response,
       @NotNull Object progress) {
     Map<Object, List<SuggestionForFile>> result = new HashMap<>();
-    if (!response.getStatus().equals("DONE")) return EMPTY_MAP;
-    AnalysisResults analysisResults = response.getAnalysisResults();
+    if (!response.getStatus().equals("COMPLETE")) return EMPTY_MAP;
     mapProject2analysisUrl.put(project, response.getAnalysisURL());
-    if (analysisResults == null) {
+    FilesMap filesMap = response.getFiles();
+    if (filesMap == null || filesMap.isEmpty()) {
       dcLogger.logWarn("AnalysisResults is null for: " + response);
       return EMPTY_MAP;
     }
     for (Object file : files) {
       // fixme iterate over analysisResults.getFiles() to reduce empty passes
       final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
-      FileSuggestions fileSuggestions = analysisResults.getFiles().get(deepCodedFilePath);
+      FileSuggestions fileSuggestions = filesMap.get(deepCodedFilePath);
       if (fileSuggestions == null) {
         result.put(file, Collections.emptyList());
         continue;
       }
-      final Suggestions suggestions = analysisResults.getSuggestions();
+      final Suggestions suggestions = response.getSuggestions();
       if (suggestions == null) {
         dcLogger.logWarn("Suggestions is empty for: " + response);
         return EMPTY_MAP;
@@ -688,12 +688,14 @@ public abstract class AnalysisDataBase {
   private MyTextRange parsePosition2MyTextRange(
       @NotNull final Position position,
       @NotNull final Object file,
-      @NotNull final Map<MyTextRange, List<MyTextRange>> markers) {
+      @NotNull final Map<MyTextRange, List<MyTextRange>> markers
+  ) {
 
     final int startRow = position.getRows().get(0);
     final int endRow = position.getRows().get(1);
     final int startCol = position.getCols().get(0) - 1; // inclusive
     final int endCol = position.getCols().get(1);
+
 
     if (startRow <= 0 || endRow <= 0 || startCol < 0 || endCol < 0) {
       final String deepCodedFilePath = pdUtils.getDeepCodedFilePath(file);
