@@ -6,7 +6,6 @@ public class GetAnalysisResponse extends EmptyResponse {
   private final String analysisURL;
   private final FilesMap files;
   private final Suggestions suggestions;
-//  private final JsonElement analysisResults;
 
   public GetAnalysisResponse(){
     super();

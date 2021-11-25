@@ -26,6 +26,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+import static ai.deepcode.javaclient.core.AnalysisDataBase.COMPLETE;
 import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -370,18 +371,7 @@ public class DeepCodeRestApiTest {
     System.out.printf(
         "Get Analysis call for test file: \n-----------\n %1$s \n-----------\nreturns Status code: %2$s \n%3$s\n",
         testFileContent, response.getStatusCode(), response);
-    assertEquals("COMPLETE", response.getStatus());
+    assertEquals(COMPLETE, response.getStatus());
     assertEquals("Get Analysis request not succeed", 200, response.getStatusCode());
   }
-
-//  This test would need a mock of SSLSocketFactory to verify the x509 manager. Commenting the test for now
-//  @Test
-//  public void setBaseUrl_shouldUseEmptyTrustManager_whenDisableSslVerificationIsTrue() {
-//    DeepCodeRestApi.setBaseUrl(baseUrl, true);
-//
-//    EmptyResponse emptyResponse = DeepCodeRestApi.checkSession(loggedToken);
-//
-//    assertThat(emptyResponse, notNullValue());
-//    assertThat(emptyResponse.getStatusCode(), equalTo(200));
-//  }
 }

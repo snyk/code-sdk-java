@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 public abstract class AnalysisDataBase {
 
+  public static final String COMPLETE = "COMPLETE";
   private final PlatformDependentUtilsBase pdUtils;
   private final HashContentUtilsBase hashContentUtils;
   private final DeepCodeParamsBase deepCodeParams;
@@ -590,7 +591,7 @@ public abstract class AnalysisDataBase {
       }
 
       counter++;
-    } while (!response.getStatus().equals("COMPLETE")
+    } while (!response.getStatus().equalsIgnoreCase(COMPLETE)
     // !!!! keep commented in production, for debug only: to emulate long processing
     // || counter < 10
     );
@@ -604,7 +605,7 @@ public abstract class AnalysisDataBase {
       GetAnalysisResponse response,
       @NotNull Object progress) {
     Map<Object, List<SuggestionForFile>> result = new HashMap<>();
-    if (!response.getStatus().equals("COMPLETE")) return EMPTY_MAP;
+    if (!response.getStatus().equalsIgnoreCase(COMPLETE)) return EMPTY_MAP;
     mapProject2analysisUrl.put(project, response.getAnalysisURL());
     FilesMap filesMap = response.getFiles();
     if (filesMap == null || filesMap.isEmpty()) {

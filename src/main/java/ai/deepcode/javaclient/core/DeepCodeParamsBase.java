@@ -95,7 +95,7 @@ public abstract class DeepCodeParamsBase {
   }
 
   public void setApiUrl(@NotNull String apiUrl, boolean disableSslVerification, boolean requestLogging) {
-    if (apiUrl.isEmpty()) apiUrl = "https://www.deepcode.ai/";
+    if (apiUrl.isEmpty()) apiUrl = "https://deeproxy.snyk.io/";
     if (!apiUrl.endsWith("/")) apiUrl += "/";
     if (apiUrl.equals(this.apiUrl)) return;
     this.apiUrl = apiUrl;
