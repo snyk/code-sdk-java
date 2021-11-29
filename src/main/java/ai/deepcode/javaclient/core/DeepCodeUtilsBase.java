@@ -5,7 +5,13 @@ import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class DeepCodeUtilsBase {
@@ -34,9 +40,7 @@ public abstract class DeepCodeUtilsBase {
   protected static Set<String> supportedConfigFiles = Collections.emptySet();
 
   public List<Object> getAllSupportedFilesInProject(
-          @NotNull Object project,
-          boolean scanAllMissedIgnoreFile,
-          @Nullable Object progress) {
+      @NotNull Object project, boolean scanAllMissedIgnoreFile, @Nullable Object progress) {
     final Collection<Object> allProjectFiles = allProjectFiles(project);
     if (allProjectFiles.isEmpty()) {
       dcLogger.logWarn("Empty files list for project: " + project);
@@ -50,8 +54,9 @@ public abstract class DeepCodeUtilsBase {
     final int totalSize = allProjectFiles.size();
     final List<Object> result = new ArrayList<>();
     for (Object file : allProjectFiles) {
-      pdUtils.progressSetText(progress, "Checked if supported " + counter + " files of " + totalSize);
-      pdUtils.progressSetFraction(progress, ((double) counter++/ totalSize));
+      pdUtils.progressSetText(
+          progress, "Checked if supported " + counter + " files of " + totalSize);
+      pdUtils.progressSetFraction(progress, ((double) counter++ / totalSize));
       if (isSupportedFileFormat(file)) {
         result.add(file);
       }

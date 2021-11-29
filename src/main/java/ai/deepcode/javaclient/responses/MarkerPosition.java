@@ -27,7 +27,7 @@ public class MarkerPosition implements Position {
 
   @Override
   public String toString() {
-    return "marker range:  rows: " + rows + " cols: " + cols+ " file: " + file;
+    return "marker range:  rows: " + rows + " cols: " + cols + " file: " + file;
   }
 
   @Override

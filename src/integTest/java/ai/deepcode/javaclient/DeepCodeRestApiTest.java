@@ -3,7 +3,11 @@
  */
 package ai.deepcode.javaclient;
 
-import ai.deepcode.javaclient.requests.*;
+import ai.deepcode.javaclient.requests.ExtendBundleWithContentRequest;
+import ai.deepcode.javaclient.requests.ExtendBundleWithHashRequest;
+import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
+import ai.deepcode.javaclient.requests.FileHashRequest;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.EmptyResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
@@ -21,10 +25,15 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 import static ai.deepcode.javaclient.core.AnalysisDataBase.COMPLETE;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DeepCodeRestApiTest {
@@ -65,7 +74,7 @@ public class DeepCodeRestApiTest {
     String description = response.getStatusDescription();
     System.out.printf(
         "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
-            "blabla", status, baseUrl, description);
+        "blabla", status, baseUrl, description);
     assertEquals(expectedStatusCode, status);
   }
 
@@ -101,9 +110,12 @@ public class DeepCodeRestApiTest {
   }
 
   @NotNull
-  private CreateBundleResponse createBundleFromSource(String token) throws NoSuchAlgorithmException {
+  private CreateBundleResponse createBundleFromSource(String token)
+      throws NoSuchAlgorithmException {
     FileContentRequest fileContent = new FileContentRequest();
-    fileContent.put("/AnnotatorTest.java", new FileHash2ContentRequest(getHash(testFileContent), testFileContent));
+    fileContent.put(
+        "/AnnotatorTest.java",
+        new FileHash2ContentRequest(getHash(testFileContent), testFileContent));
     CreateBundleResponse response = DeepCodeRestApi.createBundle(token, fileContent);
     return response;
   }
@@ -136,11 +148,11 @@ public class DeepCodeRestApiTest {
     CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
     assertNotNull(response);
     System.out.printf(
-            "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
-            response.getStatusCode(),
-            response.getBundleHash(),
-            response.getStatusDescription(),
-            response.getMissingFiles());
+        "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
+        response.getStatusCode(),
+        response.getBundleHash(),
+        response.getStatusDescription(),
+        response.getMissingFiles());
     return response;
   }
 
@@ -236,7 +248,6 @@ public class DeepCodeRestApiTest {
     } catch (IOException | NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
-
   }
 
   @NotNull
@@ -250,7 +261,8 @@ public class DeepCodeRestApiTest {
     return hash;
   }
 
-  @SuppressWarnings("DuplicatedCode") // in this test we explicitly allow it to test that hashing works
+  @SuppressWarnings(
+      "DuplicatedCode") // in this test we explicitly allow it to test that hashing works
   private static String bytesToHex(byte[] hash) {
     StringBuilder hexString = new StringBuilder();
     for (byte b : hash) {
@@ -315,7 +327,9 @@ public class DeepCodeRestApiTest {
   private EmptyResponse doUploadFile(
       CreateBundleResponse createBundleResponse, FileHashRequest fileHashRequest) {
     final File testFile =
-        new File(Objects.requireNonNull(getClass().getClassLoader().getResource("AnnotatorTest.java")).getFile());
+        new File(
+            Objects.requireNonNull(getClass().getClassLoader().getResource("AnnotatorTest.java"))
+                .getFile());
     final String absolutePath = testFile.getAbsolutePath();
     String fileText;
     try {
@@ -329,9 +343,9 @@ public class DeepCodeRestApiTest {
     final String fileHash = fileHashRequest.get(filePath);
     FileContentRequest map = new FileContentRequest();
     map.put(filePath, new FileHash2ContentRequest(fileHash, fileText));
-    ExtendBundleWithContentRequest ebr = new ExtendBundleWithContentRequest(map, Collections.emptyList());
-    return DeepCodeRestApi.extendBundle(
-        loggedToken, createBundleResponse.getBundleHash(), ebr);
+    ExtendBundleWithContentRequest ebr =
+        new ExtendBundleWithContentRequest(map, Collections.emptyList());
+    return DeepCodeRestApi.extendBundle(loggedToken, createBundleResponse.getBundleHash(), ebr);
   }
 
   @Test
@@ -348,12 +362,12 @@ public class DeepCodeRestApiTest {
     assertFalse("Analysis results must not be empty", resultsEmpty);
     System.out.println("\n---- With `severity=2` param:\n");
     response = doAnalysisAndWait(analysedFiles, 2);
-    assertAndPrintGetAnalysisResponse(
-        response);
+    assertAndPrintGetAnalysisResponse(response);
   }
 
   @NotNull
-  private GetAnalysisResponse doAnalysisAndWait(List<String> analysedFiles, Integer severity) throws InterruptedException {
+  private GetAnalysisResponse doAnalysisAndWait(List<String> analysedFiles, Integer severity)
+      throws InterruptedException {
     GetAnalysisResponse response = null;
     for (int i = 0; i < 120; i++) {
       response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, severity, analysedFiles);

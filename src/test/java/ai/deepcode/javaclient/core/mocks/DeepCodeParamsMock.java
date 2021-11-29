@@ -6,16 +6,7 @@ import org.jetbrains.annotations.NotNull;
 public class DeepCodeParamsMock extends DeepCodeParamsBase {
 
   public DeepCodeParamsMock() {
-    super(
-        true,
-        "",
-        false,
-        false,
-        1,
-        "",
-        "",
-        "",
-        () -> 1000L);
+    super(true, "", false, false, 1, "", "", "", () -> 1000L);
   }
 
   @Override

@@ -20,19 +20,19 @@ public class SuggestionForFile {
   private final List<String> cwe;
 
   public SuggestionForFile(
-          String id,
-          String rule,
-          String message,
-          String title,
-          String text,
-          int severity,
-          int repoDatasetSize,
-          List<String> exampleCommitDescriptions,
-          List<ExampleCommitFix> exampleCommitFixes,
-          List<MyTextRange> ranges,
-          List<String> categories,
-          List<String> tags,
-          List<String> cwe) {
+      String id,
+      String rule,
+      String message,
+      String title,
+      String text,
+      int severity,
+      int repoDatasetSize,
+      List<String> exampleCommitDescriptions,
+      List<ExampleCommitFix> exampleCommitFixes,
+      List<MyTextRange> ranges,
+      List<String> categories,
+      List<String> tags,
+      List<String> cwe) {
     this.id = id;
     this.rule = rule;
     this.message = message;

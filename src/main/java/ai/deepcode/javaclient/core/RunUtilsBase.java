@@ -3,7 +3,11 @@ package ai.deepcode.javaclient.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -143,7 +147,7 @@ public abstract class RunUtilsBase {
             + runId);
 
     final Object project = pdUtils.getProject(file);
-    //analysisData.setUpdateInProgress(project);
+    // analysisData.setUpdateInProgress(project);
 
     doBackgroundRun(
         project,

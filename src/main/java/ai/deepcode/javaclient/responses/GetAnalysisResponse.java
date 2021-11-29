@@ -7,7 +7,7 @@ public class GetAnalysisResponse extends EmptyResponse {
   private final FilesMap files;
   private final Suggestions suggestions;
 
-  public GetAnalysisResponse(){
+  public GetAnalysisResponse() {
     super();
     status = "";
     progress = 0;
@@ -17,7 +17,11 @@ public class GetAnalysisResponse extends EmptyResponse {
   }
 
   public GetAnalysisResponse(
-      String status, double progress, String analysisURL, FilesMap analysisResults, Suggestions suggestions) {
+      String status,
+      double progress,
+      String analysisURL,
+      FilesMap analysisResults,
+      Suggestions suggestions) {
     this.status = status;
     this.progress = progress;
     this.analysisURL = analysisURL;

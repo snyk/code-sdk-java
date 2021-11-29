@@ -28,9 +28,12 @@ public class CreateBundleResponse extends EmptyResponse {
 
   @Override
   public String toString() {
-    return "CreateBundleResponse{" +
-            "bundleHash='" + bundleHash + '\'' +
-            ", missingFiles=" + missingFiles +
-            '}';
+    return "CreateBundleResponse{"
+        + "bundleHash='"
+        + bundleHash
+        + '\''
+        + ", missingFiles="
+        + missingFiles
+        + '}';
   }
 }

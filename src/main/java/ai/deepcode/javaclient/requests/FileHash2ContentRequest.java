@@ -35,9 +35,13 @@ public class FileHash2ContentRequest {
 
   @Override
   public String toString() {
-    return "FileHash2ContentRequest{" +
-            "hash='" + hash + '\'' +
-            ", content='" + content + '\'' +
-            '}';
+    return "FileHash2ContentRequest{"
+        + "hash='"
+        + hash
+        + '\''
+        + ", content='"
+        + content
+        + '\''
+        + '}';
   }
 }
