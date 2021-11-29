@@ -3,23 +3,33 @@
  */
 package ai.deepcode.javaclient;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import ai.deepcode.javaclient.requests.*;
-import ai.deepcode.javaclient.responses.*;
-
+import ai.deepcode.javaclient.requests.ExtendBundleWithContentRequest;
+import ai.deepcode.javaclient.requests.ExtendBundleWithHashRequest;
+import ai.deepcode.javaclient.requests.FileContentRequest;
+import ai.deepcode.javaclient.requests.FileHashRequest;
+import ai.deepcode.javaclient.requests.GetAnalysisRequest;
+import ai.deepcode.javaclient.responses.CreateBundleResponse;
+import ai.deepcode.javaclient.responses.GetAnalysisResponse;
+import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import retrofit2.http.*;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -34,23 +44,33 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DeepCodeRestApi {
 
-  //  private static final Logger LOGGER = LoggerFactory.getLogger(DeepCodeRestApi.class);
-
   private DeepCodeRestApi() {}
 
   private static final String API_URL = "https://deeproxy.snyk.io/";
 
-  private static Retrofit retrofit = buildRetrofit(API_URL, false);
+  private static Retrofit retrofit = buildRetrofit(API_URL, false, false);
 
   // Create simple REST adapter which points the baseUrl.
-  private static Retrofit buildRetrofit(String baseUrl, boolean disableSslVerification) {
-    OkHttpClient.Builder builder = new OkHttpClient.Builder()
+  private static Retrofit buildRetrofit(
+      String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+    HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+    // set your desired log level
+    if (requestLogging) {
+      logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+    } else {
+      logging.setLevel(HttpLoggingInterceptor.Level.NONE);
+    }
+
+    OkHttpClient.Builder builder =
+        new OkHttpClient.Builder()
             .connectTimeout(100, TimeUnit.SECONDS)
             .writeTimeout(100, TimeUnit.SECONDS)
-            .readTimeout(100, TimeUnit.SECONDS);
+            .readTimeout(100, TimeUnit.SECONDS)
+            .addInterceptor(logging);
+
     if (disableSslVerification) {
       X509TrustManager x509TrustManager = buildUnsafeTrustManager();
-      final TrustManager[] trustAllCertificates = new TrustManager[]{ x509TrustManager };
+      final TrustManager[] trustAllCertificates = new TrustManager[] {x509TrustManager};
 
       try {
         final String sslProtocol = "SSL";
@@ -59,13 +79,15 @@ public final class DeepCodeRestApi {
         SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
         builder.sslSocketFactory(sslSocketFactory, x509TrustManager);
       } catch (NoSuchAlgorithmException | KeyManagementException e) {
-        //TODO(pavel): extract Retrofit and OkHttpClient into configuration object to simplify API client building.
+        // TODO(pavel): extract Retrofit and OkHttpClient into configuration object to simplify API
+        // client building.
         e.printStackTrace();
       }
     }
+
     OkHttpClient client = builder.build();
     return new Retrofit.Builder()
-        .baseUrl(baseUrl + "publicapi/")
+        .baseUrl(baseUrl)
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build();
@@ -82,7 +104,7 @@ public final class DeepCodeRestApi {
 
       @Override
       public X509Certificate[] getAcceptedIssuers() {
-        return new X509Certificate[]{};
+        return new X509Certificate[] {};
       }
     };
   }
@@ -94,65 +116,16 @@ public final class DeepCodeRestApi {
    *     #API_URL}
    */
   public static void setBaseUrl(@Nullable String baseUrl) {
-    setBaseUrl(baseUrl, false);
+    setBaseUrl(baseUrl, false, false);
   }
 
-  public static void setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification) {
-    retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl, disableSslVerification);
-  }
-
-  private interface LoginCall {
-    @retrofit2.http.Headers("Content-Type: application/json")
-    @POST("login")
-    Call<LoginResponse> doNewLogin(@Body SourceString source);
-  }
-
-  /**
-   * Requests the creation of a new login session.
-   *
-   * @return {@link LoginResponse} instance
-   */
-  @NotNull
-  public static LoginResponse newLogin(@NotNull String userAgent) throws UnsupportedOperationException {
-    throw new UnsupportedOperationException("login request is not handled anymore");
-  }
-
-  private interface CheckSessionCall {
-    @GET("session")
-    Call<Void> doCheckSession(@Header("Session-Token") String token);
-  }
-
-  /**
-   * Checks status of the login process.
-   *
-   * @return {@link EmptyResponse} instance
-   */
-  @NotNull
-  public static EmptyResponse checkSession(String token) {
-    CheckSessionCall checkSessionCall = retrofit.create(CheckSessionCall.class);
-    final EmptyResponse result = new EmptyResponse();
-    final Response<Void> retrofitResponse;
-    try {
-      retrofitResponse = checkSessionCall.doCheckSession(token).execute();
-    } catch (IOException e) {
-      return result;
-    }
-    result.setStatusCode(retrofitResponse.code());
-    switch (retrofitResponse.code()) {
-      case 200:
-        result.setStatusDescription("The login process was successful");
-        break;
-      case 304:
-        result.setStatusDescription("The login process has not been completed yet");
-        break;
-      case 401:
-        result.setStatusDescription("Missing or invalid sessionToken");
-        break;
-      default:
-        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-        break;
-    }
-    return result;
+  public static void setBaseUrl(
+      @Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+    retrofit =
+        buildRetrofit(
+            (baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
+            disableSslVerification,
+            requestLogging);
   }
 
   private interface CreateBundleCall {
@@ -210,7 +183,7 @@ public final class DeepCodeRestApi {
   }
 
   /**
-   * Creates a new bundle with direct file(s) source at {@link FileContent}.
+   * Creates a new bundle with direct file(s) source.
    *
    * @return {@link CreateBundleResponse} instance
    */
@@ -233,8 +206,8 @@ public final class DeepCodeRestApi {
     //    @retrofit2.http.Headers("Content-Type: application/json")
     @GET("bundle/{bundleId}")
     Call<CreateBundleResponse> doCheckBundle(
-            @Header("Session-Token") String token,
-            @Path(value = "bundleId", encoded = true) String bundleId);
+        @Header("Session-Token") String token,
+        @Path(value = "bundleId", encoded = true) String bundleId);
   }
 
   /**
@@ -244,13 +217,11 @@ public final class DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  public static CreateBundleResponse checkBundle(
-          String token, String bundleId) {
+  public static CreateBundleResponse checkBundle(String token, String bundleId) {
     CheckBundleCall checkBundleCall = retrofit.create(CheckBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse =
-              checkBundleCall.doCheckBundle(token, bundleId).execute();
+      retrofitResponse = checkBundleCall.doCheckBundle(token, bundleId).execute();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
@@ -283,9 +254,16 @@ public final class DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
-            @Header("Session-Token") String token,
-            @Path(value = "bundleId", encoded = true) String bundleId,
-            @Body ExtendBundleRequest extendBundleRequest);
+        @Header("Session-Token") String token,
+        @Path(value = "bundleId", encoded = true) String bundleId,
+        @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
+
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @PUT("bundle/{bundleId}")
+    Call<CreateBundleResponse> doExtendBundle(
+        @Header("Session-Token") String token,
+        @Path(value = "bundleId", encoded = true) String bundleId,
+        @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
   }
 
   /**
@@ -295,13 +273,22 @@ public final class DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  public static CreateBundleResponse extendBundle(
-      String token, String bundleId, ExtendBundleRequest extendBundleRequest) {
+  public static <Req> CreateBundleResponse extendBundle(
+      String token, String bundleId, Req request) {
     ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse =
-          extendBundleCall.doExtendBundle(token, bundleId, extendBundleRequest).execute();
+      if (request instanceof ExtendBundleWithHashRequest)
+        retrofitResponse =
+            extendBundleCall
+                .doExtendBundle(token, bundleId, (ExtendBundleWithHashRequest) request)
+                .execute();
+      else if (request instanceof ExtendBundleWithContentRequest)
+        retrofitResponse =
+            extendBundleCall
+                .doExtendBundle(token, bundleId, (ExtendBundleWithContentRequest) request)
+                .execute();
+      else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }
@@ -315,7 +302,8 @@ public final class DeepCodeRestApi {
         result.setStatusDescription("The bundle extension was successful");
         break;
       case 400:
-        result.setStatusDescription("Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
+        result.setStatusDescription(
+            "Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
         break;
       case 401:
         result.setStatusDescription("Missing sessionToken or incomplete login process");
@@ -336,67 +324,11 @@ public final class DeepCodeRestApi {
     return result;
   }
 
-  private interface UploadFilesCall {
-    @retrofit2.http.Headers("Content-Type: application/json;charset=utf-8")
-    @POST("file/{bundleId}")
-    Call<Void> doUploadFiles(
-        @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId,
-        @Body List<FileHash2ContentRequest> listHash2Content);
-  }
-
-  /**
-   * Uploads missing files to a bundle.
-   *
-   * @param token
-   * @param bundleId
-   * @param request List&lt;FileHash2ContentRequest&gt;
-   * @return EmptyResponse with return code and description.
-   */
-  public static EmptyResponse UploadFiles(
-      String token, String bundleId, List<FileHash2ContentRequest> request) {
-    UploadFilesCall uploadFilesCall = retrofit.create(UploadFilesCall.class);
-    Response<Void> retrofitResponse;
-    try {
-      retrofitResponse = uploadFilesCall.doUploadFiles(token, bundleId, request).execute();
-    } catch (IOException e) {
-      return new EmptyResponse();
-    }
-    EmptyResponse result = new EmptyResponse();
-    result.setStatusCode(retrofitResponse.code());
-    switch (retrofitResponse.code()) {
-      case 200:
-        result.setStatusDescription("Upload succeeded");
-        break;
-      case 400:
-        result.setStatusDescription(
-            "Content and hash mismatch or attempted to upload files to a git bundle");
-        break;
-      case 401:
-        result.setStatusDescription("Missing sessionToken or incomplete login process");
-        break;
-      case 403:
-        result.setStatusDescription("Unauthorized access to requested bundle");
-        break;
-      case 413:
-        result.setStatusDescription("Payload too large");
-        break;
-      default:
-        result.setStatusDescription("Unknown Status Code: " + retrofitResponse.code());
-        break;
-    }
-    return result;
-  }
-
   private interface GetAnalysisCall {
     @retrofit2.http.Headers("Content-Type: application/json")
-    @POST("analysis/{bundleId}")
+    @POST("analysis")
     Call<GetAnalysisResponse> doGetAnalysis(
-        @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId,
-        @Query("severity") Integer severity,
-        @QueryName String linters,
-        @Body GetAnalysisRequest filesToAnalyse);
+        @Header("Session-Token") String token, @Body GetAnalysisRequest filesToAnalyse);
   }
 
   /**
@@ -406,21 +338,12 @@ public final class DeepCodeRestApi {
    */
   @NotNull
   public static GetAnalysisResponse getAnalysis(
-      String token,
-      String bundleId,
-      Integer severity,
-      boolean useLinters,
-      List<String> filesToAnalyse) {
+      String token, String bundleId, Integer severity, List<String> filesToAnalyse) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
           getAnalysisCall
-              .doGetAnalysis(
-                  token,
-                  bundleId,
-                  severity,
-                  (useLinters) ? "linters" : null,
-                  new GetAnalysisRequest(filesToAnalyse))
+              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity))
               .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();

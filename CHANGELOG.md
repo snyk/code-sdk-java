@@ -1,3 +1,6 @@
+## [2.2.0] - 2020-11-29
+- feat: update to latest snyk-code api
+
 ## [2.1.12] - 2020-10-17
 - fix: isFullRescanRequested() should be False after rescan finished and before UI updates.
 

@@ -29,8 +29,7 @@ public abstract class DeepCodeParamsBase {
       String sessionToken,
       String loginUrl,
       String ideProductName,
-      Supplier<Long> getTimeoutForGettingAnalysesMs
-  ) {
+      Supplier<Long> getTimeoutForGettingAnalysesMs) {
     this.isEnable = isEnable;
     this.apiUrl = apiUrl;
     this.disableSslVerification = disableSslVerification;
@@ -91,12 +90,17 @@ public abstract class DeepCodeParamsBase {
   }
 
   public void setApiUrl(@NotNull String apiUrl, boolean disableSslVerification) {
-    if (apiUrl.isEmpty()) apiUrl = "https://www.deepcode.ai/";
+    setApiUrl(apiUrl, disableSslVerification, false);
+  }
+
+  public void setApiUrl(
+      @NotNull String apiUrl, boolean disableSslVerification, boolean requestLogging) {
+    if (apiUrl.isEmpty()) apiUrl = "https://deeproxy.snyk.io/";
     if (!apiUrl.endsWith("/")) apiUrl += "/";
     if (apiUrl.equals(this.apiUrl)) return;
     this.apiUrl = apiUrl;
     this.disableSslVerification = disableSslVerification;
-    DeepCodeRestApi.setBaseUrl(apiUrl, disableSslVerification);
+    DeepCodeRestApi.setBaseUrl(apiUrl, disableSslVerification, requestLogging);
   }
 
   public boolean isDisableSslVerification() {

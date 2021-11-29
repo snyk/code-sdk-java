@@ -16,14 +16,14 @@ public class MyTextRange {
   private final String file;
 
   MyTextRange(
-          int start,
-          int end,
-          int startRow,
-          int endRow,
-          int startCol,
-          int endCol,
-          Map<MyTextRange, List<MyTextRange>> markers,
-          String file) {
+      int start,
+      int end,
+      int startRow,
+      int endRow,
+      int startCol,
+      int endCol,
+      Map<MyTextRange, List<MyTextRange>> markers,
+      String file) {
 
     this.start = start;
     this.end = end;

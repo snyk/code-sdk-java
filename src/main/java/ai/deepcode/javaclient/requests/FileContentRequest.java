@@ -1,16 +1,6 @@
 package ai.deepcode.javaclient.requests;
 
-import java.util.List;
+import java.util.HashMap;
 
-public class FileContentRequest {
-  private List<FileContent> files = null;
-
-  public FileContentRequest(List<FileContent> files) {
-    super();
-    this.files = files;
-  }
-
-  public List<FileContent> getFiles() {
-    return files;
-  }
-}
+/** filePath : FileHash2ContentRequest */
+public class FileContentRequest extends HashMap<String, FileHash2ContentRequest> {}

@@ -12,10 +12,10 @@ public abstract class HashContentUtilsBase {
 
   private final PlatformDependentUtilsBase platformDependentUtils;
 
-  protected HashContentUtilsBase(@NotNull PlatformDependentUtilsBase platformDependentUtils){
+  protected HashContentUtilsBase(@NotNull PlatformDependentUtilsBase platformDependentUtils) {
     this.platformDependentUtils = platformDependentUtils;
-  };
-  
+  }
+
   private static final Map<Object, String> mapFile2Hash = new ConcurrentHashMap<>();
   private static final Map<Object, String> mapFile2Content = new ConcurrentHashMap<>();
 
@@ -48,20 +48,20 @@ public abstract class HashContentUtilsBase {
     String newHash = doGetHash(doGetFileContent(file));
     String oldHash = mapFile2Hash.put(file, newHash);
     // fixme debug only
-/*
-    DCLogger.getInstance().info(
-        "Hash check (if file been changed) for "
-            + file.getName()
-            + "\noldHash = "
-            + oldHash
-            + "\nnewHash = "
-            + newHash);
-*/
+    /*
+        DCLogger.getInstance().info(
+            "Hash check (if file been changed) for "
+                + file.getName()
+                + "\noldHash = "
+                + oldHash
+                + "\nnewHash = "
+                + newHash);
+    */
 
     return !newHash.equals(oldHash);
   }
 
-  String getHash(@NotNull Object file) {
+  public String getHash(@NotNull Object file) {
     return mapFile2Hash.computeIfAbsent(file, this::doGetHash);
   }
 
@@ -69,7 +69,7 @@ public abstract class HashContentUtilsBase {
     return doGetHash(getFileContent(file));
   }
 
-  private String doGetHash(@NotNull String fileText) {
+  private static String doGetHash(@NotNull String fileText) {
     MessageDigest messageDigest;
     try {
       messageDigest = MessageDigest.getInstance("SHA-256");
@@ -80,19 +80,14 @@ public abstract class HashContentUtilsBase {
     return bytesToHex(encodedHash);
   }
 
-  /**
-   * Look for cached content first, require manual cache invalidation if file been changed
-   */
+  /** Look for cached content first, require manual cache invalidation if file been changed */
   @NotNull
   public String getFileContent(@NotNull Object file) {
     // potential OutOfMemoryException for too large projects
     return mapFile2Content.computeIfAbsent(file, this::doGetFileContent);
   }
 
-  /**
-   * Make direct read of File content. NO cache check.
-   */
+  /** Make direct read of File content. NO cache check. */
   @NotNull
   public abstract String doGetFileContent(@NotNull Object file);
-
 }

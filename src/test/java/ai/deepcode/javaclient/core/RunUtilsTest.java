@@ -1,6 +1,13 @@
 package ai.deepcode.javaclient.core;
 
-import ai.deepcode.javaclient.core.mocks.*;
+import ai.deepcode.javaclient.core.mocks.AnalysisDataBaseMock;
+import ai.deepcode.javaclient.core.mocks.DeepCodeIgnoreInfoHolderMock;
+import ai.deepcode.javaclient.core.mocks.DeepCodeParamsMock;
+import ai.deepcode.javaclient.core.mocks.DeepCodeUtilsMock;
+import ai.deepcode.javaclient.core.mocks.HashContentUtilsMock;
+import ai.deepcode.javaclient.core.mocks.LoggerMock;
+import ai.deepcode.javaclient.core.mocks.PlatformDependentUtilsAbstractMock;
+import ai.deepcode.javaclient.core.mocks.RunUtilsBaseMock;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 

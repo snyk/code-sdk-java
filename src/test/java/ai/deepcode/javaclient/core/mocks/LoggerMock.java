@@ -6,12 +6,12 @@ public class LoggerMock extends DCLoggerBase {
 
   public LoggerMock() {
     super(
-            () -> System.out::println,
-            () -> System.out::println,
-            () -> true,
-            () -> true,
-            "ai.deepcode",
-            "");
+        () -> System.out::println,
+        () -> System.out::println,
+        () -> true,
+        () -> true,
+        "ai.deepcode",
+        "");
   }
 
   @Override

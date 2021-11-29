@@ -7,11 +7,12 @@ public class GetFiltersResponse extends EmptyResponse {
   private final List<String> extensions;
   private final List<String> configFiles;
 
-  public GetFiltersResponse(){
+  public GetFiltersResponse() {
     super();
     extensions = Collections.emptyList();
     configFiles = Collections.emptyList();
   }
+
   public GetFiltersResponse(List<String> extensions, List<String> configFiles) {
     this.extensions = extensions;
     this.configFiles = configFiles;

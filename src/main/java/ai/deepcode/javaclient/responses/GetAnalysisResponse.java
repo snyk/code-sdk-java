@@ -4,23 +4,29 @@ public class GetAnalysisResponse extends EmptyResponse {
   private final String status;
   private final double progress;
   private final String analysisURL;
-  private final AnalysisResults analysisResults;
-//  private final JsonElement analysisResults;
+  private final FilesMap files;
+  private final Suggestions suggestions;
 
-  public GetAnalysisResponse(){
+  public GetAnalysisResponse() {
     super();
     status = "";
     progress = 0;
     analysisURL = "";
-    analysisResults = null;
+    suggestions = null;
+    files = null;
   }
 
   public GetAnalysisResponse(
-      String status, double progress, String analysisURL, AnalysisResults analysisResults) {
+      String status,
+      double progress,
+      String analysisURL,
+      FilesMap analysisResults,
+      Suggestions suggestions) {
     this.status = status;
     this.progress = progress;
     this.analysisURL = analysisURL;
-    this.analysisResults = analysisResults;
+    this.files = analysisResults;
+    this.suggestions = suggestions;
   }
 
   public String getStatus() {
@@ -35,8 +41,8 @@ public class GetAnalysisResponse extends EmptyResponse {
     return analysisURL;
   }
 
-  public AnalysisResults getAnalysisResults() {
-    return analysisResults;
+  public FilesMap getFiles() {
+    return files;
   }
 
   @Override
@@ -49,6 +55,10 @@ public class GetAnalysisResponse extends EmptyResponse {
         + "\nanalysisURL: "
         + analysisURL
         + "\nanalysisResult: "
-        + analysisResults;
+        + suggestions;
+  }
+
+  public Suggestions getSuggestions() {
+    return suggestions;
   }
 }

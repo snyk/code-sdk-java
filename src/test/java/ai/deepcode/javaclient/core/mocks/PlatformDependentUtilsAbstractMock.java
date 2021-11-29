@@ -60,27 +60,20 @@ public abstract class PlatformDependentUtilsAbstractMock extends PlatformDepende
 
   @Override
   public void runInBackgroundCancellable(
-          @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {
-  }
+      @NotNull Object file, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {}
 
   @Override
   public void runInBackground(
-          @NotNull Object project,
-          @NotNull String title,
-          @NotNull Consumer<Object> progressConsumer) {
-  }
+      @NotNull Object project, @NotNull String title, @NotNull Consumer<Object> progressConsumer) {}
 
   @Override
-  public void cancelRunningIndicators(@NotNull Object project) {
-  }
+  public void cancelRunningIndicators(@NotNull Object project) {}
 
   @Override
-  public void doFullRescan(@NotNull Object project) {
-  }
+  public void doFullRescan(@NotNull Object project) {}
 
   @Override
-  public void refreshPanel(@NotNull Object project) {
-  }
+  public void refreshPanel(@NotNull Object project) {}
 
   @Override
   public boolean isLogged(@Nullable Object project, boolean userActionNeeded) {
@@ -88,12 +81,10 @@ public abstract class PlatformDependentUtilsAbstractMock extends PlatformDepende
   }
 
   @Override
-  public void progressSetText(@Nullable Object progress, String text) {
-  }
+  public void progressSetText(@Nullable Object progress, String text) {}
 
   @Override
-  public void progressCheckCanceled(@Nullable Object progress) {
-  }
+  public void progressCheckCanceled(@Nullable Object progress) {}
 
   @Override
   public boolean progressCanceled(@Nullable Object progress) {
@@ -101,30 +92,23 @@ public abstract class PlatformDependentUtilsAbstractMock extends PlatformDepende
   }
 
   @Override
-  public void progressSetFraction(@Nullable Object progress, double fraction) {
-  }
+  public void progressSetFraction(@Nullable Object progress, double fraction) {}
 
   @Override
-  public void showInBrowser(@NotNull String url) {
-  }
+  public void showInBrowser(@NotNull String url) {}
 
   @Override
-  public void showLoginLink(@Nullable Object project, String message) {
-  }
+  public void showLoginLink(@Nullable Object project, String message) {}
 
   @Override
-  public void showConsentRequest(Object project, boolean userActionNeeded) {
-  }
+  public void showConsentRequest(Object project, boolean userActionNeeded) {}
 
   @Override
-  public void showInfo(String message, @Nullable Object project) {
-  }
+  public void showInfo(String message, @Nullable Object project) {}
 
   @Override
-  public void showWarn(String message, @Nullable Object project, boolean wasWarnShown) {
-  }
+  public void showWarn(String message, @Nullable Object project, boolean wasWarnShown) {}
 
   @Override
-  public void showError(String message, @Nullable Object project) {
-  }
+  public void showError(String message, @Nullable Object project) {}
 }
