@@ -107,11 +107,10 @@ public final class DeepCodeRestApi {
     setBaseUrl(baseUrl, false, false);
   }
 
-  public static Retrofit setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+  public static void setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
     retrofit = buildRetrofit((baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
             disableSslVerification,
             requestLogging);
-    return retrofit;
   }
 
 
@@ -245,7 +244,14 @@ public final class DeepCodeRestApi {
     Call<CreateBundleResponse> doExtendBundle(
             @Header("Session-Token") String token,
             @Path(value = "bundleId", encoded = true) String bundleId,
-            @Body ExtendBundleRequest extendBundleRequest);
+            @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
+
+    @retrofit2.http.Headers("Content-Type: application/json")
+    @PUT("bundle/{bundleId}")
+    Call<CreateBundleResponse> doExtendBundle(
+            @Header("Session-Token") String token,
+            @Path(value = "bundleId", encoded = true) String bundleId,
+            @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
   }
 
   /**
@@ -255,13 +261,18 @@ public final class DeepCodeRestApi {
    * @return {@link CreateBundleResponse} instance
    */
   @NotNull
-  public static CreateBundleResponse extendBundle(
-      String token, String bundleId, ExtendBundleRequest extendBundleRequest) {
+  public static <Req> CreateBundleResponse extendBundle(
+      String token, String bundleId, Req request) {
     ExtendBundleCall extendBundleCall = retrofit.create(ExtendBundleCall.class);
     Response<CreateBundleResponse> retrofitResponse;
     try {
-      retrofitResponse =
-          extendBundleCall.doExtendBundle(token, bundleId, extendBundleRequest).execute();
+      if (request instanceof ExtendBundleWithHashRequest)
+        retrofitResponse =
+          extendBundleCall.doExtendBundle(token, bundleId, (ExtendBundleWithHashRequest) request).execute();
+      else if (request instanceof ExtendBundleWithContentRequest)
+        retrofitResponse =
+          extendBundleCall.doExtendBundle(token, bundleId, (ExtendBundleWithContentRequest) request).execute();
+      else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
     }

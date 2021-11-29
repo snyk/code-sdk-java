@@ -498,7 +498,7 @@ public abstract class AnalysisDataBase {
           DeepCodeRestApi.extendBundle(
               deepCodeParams.getSessionToken(),
               parentBundleId,
-              new ExtendBundleRequest(request, removedFiles));
+              new ExtendBundleWithHashRequest(request, removedFiles));
     }
     String newBundleId = bundleResponse.getBundleHash();
     // By man: "Extending a bundle by removing all the parent bundle's files is not allowed."
@@ -524,7 +524,7 @@ public abstract class AnalysisDataBase {
     dcLogger.logInfo("Uploading " + psiFiles.size() + " files... ");
     if (psiFiles.isEmpty()) return;
 
-    Map<String, Object> files = new HashMap<>();
+    FileContentRequest files = new FileContentRequest();
     for (Object psiFile : psiFiles) {
       pdUtils.progressCheckCanceled(progress);
       files.put(pdUtils.getFilePath(psiFile), new FileHash2ContentRequest(
@@ -534,7 +534,7 @@ public abstract class AnalysisDataBase {
     // todo make network request in parallel with collecting data
     EmptyResponse uploadFilesResponse =
         DeepCodeRestApi.extendBundle(deepCodeParams.getSessionToken(), bundleId,
-                new ExtendBundleRequest(files, Collections.emptyList()));
+                new ExtendBundleWithContentRequest(files, Collections.emptyList()));
     isNotSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
   }
 

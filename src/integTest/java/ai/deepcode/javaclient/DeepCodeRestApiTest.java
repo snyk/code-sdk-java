@@ -3,10 +3,7 @@
  */
 package ai.deepcode.javaclient;
 
-import ai.deepcode.javaclient.requests.ExtendBundleRequest;
-import ai.deepcode.javaclient.requests.FileContentRequest;
-import ai.deepcode.javaclient.requests.FileHash2ContentRequest;
-import ai.deepcode.javaclient.requests.FileHashRequest;
+import ai.deepcode.javaclient.requests.*;
 import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.EmptyResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
@@ -272,11 +269,11 @@ public class DeepCodeRestApiTest {
     assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
 
     FileHashRequest newFileHashRequest = createFileHashRequest("test2.js");
-    ExtendBundleRequest extendBundleRequest =
-        new ExtendBundleRequest(newFileHashRequest, Collections.emptyList());
+    ExtendBundleWithHashRequest extendBundleWithHashRequest =
+        new ExtendBundleWithHashRequest(newFileHashRequest, Collections.emptyList());
     CreateBundleResponse extendBundleResponse =
         DeepCodeRestApi.extendBundle(
-            loggedToken, createBundleResponse.getBundleHash(), extendBundleRequest);
+            loggedToken, createBundleResponse.getBundleHash(), extendBundleWithHashRequest);
     assertNotNull(extendBundleResponse);
     System.out.printf(
         "Extend Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -330,9 +327,9 @@ public class DeepCodeRestApiTest {
 
     final String filePath = createBundleResponse.getMissingFiles().get(0);
     final String fileHash = fileHashRequest.get(filePath);
-    Map<String, Object> map = new HashMap<>();
+    FileContentRequest map = new FileContentRequest();
     map.put(filePath, new FileHash2ContentRequest(fileHash, fileText));
-    ExtendBundleRequest ebr = new ExtendBundleRequest(map, Collections.emptyList());
+    ExtendBundleWithContentRequest ebr = new ExtendBundleWithContentRequest(map, Collections.emptyList());
     return DeepCodeRestApi.extendBundle(
         loggedToken, createBundleResponse.getBundleHash(), ebr);
   }
