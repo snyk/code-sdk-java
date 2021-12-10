@@ -1,3 +1,6 @@
+## [2.2.1] - 2020-12-10
+- fix: don't upload empty files
+
 ## [2.2.0] - 2020-11-29
 - feat: update to latest snyk-code api
 
