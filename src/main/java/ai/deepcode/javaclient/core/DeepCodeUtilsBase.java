@@ -77,6 +77,7 @@ public abstract class DeepCodeUtilsBase {
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
     if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnoredExternalCheck(file)) return false;
+    if (pdUtils.getFileSize(file) == 0) return false;
     final boolean result =
         getFileLength(file) < MAX_FILE_SIZE
             && (supportedExtensions.contains(getFileExtention(file))

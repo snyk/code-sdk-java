@@ -352,12 +352,6 @@ public abstract class AnalysisDataBase {
 
       final String path = pdUtils.getDeepCodedFilePath(file);
 
-      // don't analyse empty files
-      if (pdUtils.getFileSize(file) == 0) {
-        dcLogger.logInfo("Empty file skipped:" + path);
-        continue;
-      }
-
       // info("getHash requested");
       final String hash = hashContentUtils.getHash(file);
       if (fileCounter == 1)

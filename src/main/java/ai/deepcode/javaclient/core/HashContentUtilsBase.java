@@ -31,6 +31,7 @@ public abstract class HashContentUtilsBase {
 
   // ?? com.intellij.openapi.util.text.StringUtil.toHexString
   // https://www.baeldung.com/sha-256-hashing-java#message-digest
+  @SuppressWarnings("DuplicatedCode") // it's the test code that triggers the warning
   private static String bytesToHex(byte[] hash) {
     StringBuilder hexString = new StringBuilder();
     for (byte b : hash) {
