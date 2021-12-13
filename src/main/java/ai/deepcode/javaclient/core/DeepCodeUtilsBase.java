@@ -5,13 +5,7 @@ import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class DeepCodeUtilsBase {
@@ -23,11 +17,11 @@ public abstract class DeepCodeUtilsBase {
   private final DCLoggerBase dcLogger;
 
   protected DeepCodeUtilsBase(
-      @NotNull AnalysisDataBase analysisData,
-      @NotNull DeepCodeParamsBase deepCodeParams,
-      @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
-      @NotNull PlatformDependentUtilsBase pdUtils,
-      @NotNull DCLoggerBase dcLogger) {
+    @NotNull AnalysisDataBase analysisData,
+    @NotNull DeepCodeParamsBase deepCodeParams,
+    @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
+    @NotNull PlatformDependentUtilsBase pdUtils,
+    @NotNull DCLoggerBase dcLogger) {
     this.analysisData = analysisData;
     this.deepCodeParams = deepCodeParams;
     this.ignoreInfoHolder = ignoreInfoHolder;
@@ -40,7 +34,7 @@ public abstract class DeepCodeUtilsBase {
   protected static Set<String> supportedConfigFiles = Collections.emptySet();
 
   public List<Object> getAllSupportedFilesInProject(
-      @NotNull Object project, boolean scanAllMissedIgnoreFile, @Nullable Object progress) {
+    @NotNull Object project, boolean scanAllMissedIgnoreFile, @Nullable Object progress) {
     final Collection<Object> allProjectFiles = allProjectFiles(project);
     if (allProjectFiles.isEmpty()) {
       dcLogger.logWarn("Empty files list for project: " + project);
@@ -55,7 +49,7 @@ public abstract class DeepCodeUtilsBase {
     final List<Object> result = new ArrayList<>();
     for (Object file : allProjectFiles) {
       pdUtils.progressSetText(
-          progress, "Checked if supported " + counter + " files of " + totalSize);
+        progress, "Checked if supported " + counter + " files of " + totalSize);
       pdUtils.progressSetFraction(progress, ((double) counter++ / totalSize));
       if (isSupportedFileFormat(file)) {
         result.add(file);
@@ -77,13 +71,10 @@ public abstract class DeepCodeUtilsBase {
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
     if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnoredExternalCheck(file)) return false;
-    if (pdUtils.getFileSize(file) == 0) return false;
-    final boolean result =
-        getFileLength(file) < MAX_FILE_SIZE
-            && (supportedExtensions.contains(getFileExtention(file))
-                || supportedConfigFiles.contains(pdUtils.getFileName(file)));
     // DCLogger.getInstance().info("isSupportedFileFormat ends for " + psiFile.getName());
-    return result;
+    return getFileLength(file) < MAX_FILE_SIZE
+      && (supportedExtensions.contains(getFileExtention(file)) || supportedConfigFiles.contains(pdUtils.getFileName(file)))
+      && pdUtils.getFileSize(file) > 0;
   }
 
   protected abstract long getFileLength(@NotNull Object file);
@@ -92,41 +83,43 @@ public abstract class DeepCodeUtilsBase {
 
   protected abstract boolean isGitIgnoredExternalCheck(@NotNull Object file);
 
-  /** Potentially <b>Heavy</b> network request! */
+  /**
+   * Potentially <b>Heavy</b> network request!
+   */
   private void initSupportedExtentionsAndConfigFiles() {
     GetFiltersResponse filtersResponse =
-        DeepCodeRestApi.getFilters(deepCodeParams.getSessionToken());
+      DeepCodeRestApi.getFilters(deepCodeParams.getSessionToken());
     if (filtersResponse.getStatusCode() == 200) {
       supportedExtensions =
-          filtersResponse.getExtensions().stream()
-              .map(s -> s.substring(1)) // remove preceding `.` (`.js` -> `js`)
-              .collect(Collectors.toSet());
+        filtersResponse.getExtensions().stream()
+          .map(s -> s.substring(1)) // remove preceding `.` (`.js` -> `js`)
+          .collect(Collectors.toSet());
       supportedConfigFiles = new HashSet<>(filtersResponse.getConfigFiles());
       dcLogger.logInfo("Supported extensions: " + supportedExtensions);
       dcLogger.logInfo("Supported configFiles: " + supportedConfigFiles);
     } else {
       dcLogger.logWarn(
-          "Can't retrieve supported file extensions and config files from the server. Fallback to default set.\n"
-              + filtersResponse.getStatusCode()
-              + " "
-              + filtersResponse.getStatusDescription());
+        "Can't retrieve supported file extensions and config files from the server. Fallback to default set.\n"
+          + filtersResponse.getStatusCode()
+          + " "
+          + filtersResponse.getStatusDescription());
       supportedExtensions =
-          new HashSet<>(
-              Arrays.asList(
-                  "cc", "htm", "cpp", "cxx", "c", "vue", "h", "hpp", "hxx", "es6", "js", "py", "es",
-                  "jsx", "java", "tsx", "html", "ts"));
+        new HashSet<>(
+          Arrays.asList(
+            "cc", "htm", "cpp", "cxx", "c", "vue", "h", "hpp", "hxx", "es6", "js", "py", "es",
+            "jsx", "java", "tsx", "html", "ts"));
       supportedConfigFiles =
-          new HashSet<>(
-              Arrays.asList(
-                  "pylintrc",
-                  "ruleset.xml",
-                  ".eslintrc.json",
-                  ".pylintrc",
-                  ".eslintrc.js",
-                  "tslint.json",
-                  ".pmdrc.xml",
-                  ".ruleset.xml",
-                  ".eslintrc.yml"));
+        new HashSet<>(
+          Arrays.asList(
+            "pylintrc",
+            "ruleset.xml",
+            ".eslintrc.json",
+            ".pylintrc",
+            ".eslintrc.js",
+            "tslint.json",
+            ".pmdrc.xml",
+            ".ruleset.xml",
+            ".eslintrc.yml"));
     }
   }
 
