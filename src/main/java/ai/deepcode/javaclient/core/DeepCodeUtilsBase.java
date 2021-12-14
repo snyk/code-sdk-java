@@ -71,10 +71,11 @@ public abstract class DeepCodeUtilsBase {
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
     if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnoredExternalCheck(file)) return false;
+    long fileLength = getFileLength(file);
+    boolean supported = 0 < fileLength && fileLength < MAX_FILE_SIZE &&
+      (supportedExtensions.contains(getFileExtention(file)) || supportedConfigFiles.contains(pdUtils.getFileName(file)));
     // DCLogger.getInstance().info("isSupportedFileFormat ends for " + psiFile.getName());
-    return getFileLength(file) < MAX_FILE_SIZE
-      && (supportedExtensions.contains(getFileExtention(file)) || supportedConfigFiles.contains(pdUtils.getFileName(file)))
-      && pdUtils.getFileSize(file) > 0;
+    return supported;
   }
 
   protected abstract long getFileLength(@NotNull Object file);
