@@ -351,10 +351,11 @@ public abstract class AnalysisDataBase {
           progress, PREPARE_FILES_TEXT + fileCounter + " of " + totalFiles + " files done.");
 
       final String path = pdUtils.getDeepCodedFilePath(file);
+
       // info("getHash requested");
       final String hash = hashContentUtils.getHash(file);
       if (fileCounter == 1)
-        dcLogger.logInfo("First file to proceed: \npath = " + path + "\nhash = " + hash);
+        dcLogger.logInfo("First file to process: \npath = " + path + "\nhash = " + hash);
 
       hashRequest.put(path, hash);
       sizePath2Hash += (path.length() + hash.length()) * 2L; // rough estimation of bytes occupied
