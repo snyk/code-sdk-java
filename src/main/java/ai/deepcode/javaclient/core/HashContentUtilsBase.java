@@ -70,14 +70,14 @@ public abstract class HashContentUtilsBase {
     return doGetHash(getFileContent(file));
   }
 
-  private static String doGetHash(@NotNull String fileText) {
+  protected static String doGetHash(@NotNull String plain) {
     MessageDigest messageDigest;
     try {
       messageDigest = MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException(e);
     }
-    byte[] encodedHash = messageDigest.digest(fileText.getBytes(StandardCharsets.UTF_8));
+    byte[] encodedHash = messageDigest.digest(plain.getBytes(StandardCharsets.UTF_8));
     return bytesToHex(encodedHash);
   }
 

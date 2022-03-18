@@ -338,7 +338,7 @@ public final class DeepCodeRestApi {
    */
   @NotNull
   public static GetAnalysisResponse getAnalysis(
-      String token, String bundleId, Integer severity, List<String> filesToAnalyse) {
+    String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =

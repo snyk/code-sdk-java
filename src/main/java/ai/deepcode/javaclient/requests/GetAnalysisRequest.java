@@ -32,15 +32,19 @@ public class GetAnalysisRequest {
     this(bundleHash, limitToFiles, severity, false, true);
   }
 
-  private class GetAnalysisKey {
-    private String type = "file";
-    private String hash;
-    private List<String> limitToFiles;
+  private static class GetAnalysisKey {
+    private final String type = "file";
+    private final String hash;
+    private final List<String> limitToFiles;
+    private final String shard;
 
-    public GetAnalysisKey(String hash, List<String> limitToFiles) {
-      this.type = type;
+    public GetAnalysisKey(String hash, List<String> limitToFiles, String shard) {
       this.hash = hash;
       this.limitToFiles = limitToFiles;
+      this.shard = shard;
+    }
+    public GetAnalysisKey(String hash, List<String> limitToFiles) {
+      this(hash, limitToFiles, hash);
     }
 
     public String getHash() {
@@ -49,6 +53,10 @@ public class GetAnalysisRequest {
 
     public List<String> getLimitToFiles() {
       return limitToFiles;
+    }
+
+    public String getShard() {
+      return shard;
     }
 
     @Override
