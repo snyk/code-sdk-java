@@ -343,7 +343,7 @@ public final class DeepCodeRestApi {
     try {
       Response<GetAnalysisResponse> retrofitResponse =
           getAnalysisCall
-              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity))
+              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard))
               .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();

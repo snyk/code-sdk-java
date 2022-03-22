@@ -46,7 +46,7 @@ public abstract class HashContentUtilsBase {
   public boolean isHashChanged(@NotNull Object file) {
     // fixme debug only
     // DCLogger.getInstance().info("hash check started");
-    String newHash = doGetHash(doGetFileContent(file));
+    String newHash = calculateHash(doGetFileContent(file));
     String oldHash = mapFile2Hash.put(file, newHash);
     // fixme debug only
     /*
@@ -67,10 +67,10 @@ public abstract class HashContentUtilsBase {
   }
 
   private String doGetHash(@NotNull Object file) {
-    return doGetHash(getFileContent(file));
+    return calculateHash(getFileContent(file));
   }
 
-  protected static String doGetHash(@NotNull String plain) {
+  protected static String calculateHash(@NotNull String plain) {
     MessageDigest messageDigest;
     try {
       messageDigest = MessageDigest.getInstance("SHA-256");

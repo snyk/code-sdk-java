@@ -6,30 +6,33 @@ import java.util.Objects;
 public class GetAnalysisRequest {
   private GetAnalysisKey key;
   private Integer severity;
-  private boolean prioritized = false;
-  private boolean legacy = true;
+  private boolean prioritized;
+  private boolean legacy;
 
   /**
    * @param bundleHash
    * @param limitToFiles list of filePath
    * @param severity
+   * @param shard uniq String (hash) per Project to optimize jobs on backend (run on the same worker to reuse caches)
    * @param prioritized
    * @param legacy
    */
   public GetAnalysisRequest(
-      String bundleHash,
-      List<String> limitToFiles,
-      Integer severity,
-      boolean prioritized,
-      boolean legacy) {
-    this.key = new GetAnalysisKey(bundleHash, limitToFiles);
+    String bundleHash,
+    List<String> limitToFiles,
+    Integer severity,
+    String shard,
+    boolean prioritized,
+    boolean legacy
+  ) {
+    this.key = new GetAnalysisKey(bundleHash, limitToFiles, shard);
     this.severity = severity;
     this.prioritized = prioritized;
     this.legacy = legacy;
   }
 
-  public GetAnalysisRequest(String bundleHash, List<String> limitToFiles, Integer severity) {
-    this(bundleHash, limitToFiles, severity, false, true);
+  public GetAnalysisRequest(String bundleHash, List<String> limitToFiles, Integer severity, String shard) {
+    this(bundleHash, limitToFiles, severity, shard, false, true);
   }
 
   private static class GetAnalysisKey {
@@ -42,9 +45,6 @@ public class GetAnalysisRequest {
       this.hash = hash;
       this.limitToFiles = limitToFiles;
       this.shard = shard;
-    }
-    public GetAnalysisKey(String hash, List<String> limitToFiles) {
-      this(hash, limitToFiles, hash);
     }
 
     public String getHash() {
