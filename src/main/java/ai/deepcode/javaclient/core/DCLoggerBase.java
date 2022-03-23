@@ -29,8 +29,8 @@ public abstract class DCLoggerBase {
     this.presentableName = presentableName;
   }
 
-  protected static final SimpleDateFormat HMSS = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss:aa");
-  protected static final SimpleDateFormat mmssSSS = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss:aa");
+  protected static final SimpleDateFormat HMSS = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss,S");
+  protected static final SimpleDateFormat mmssSSS = new SimpleDateFormat("mm:ss,SSS");
 
   public void logInfo(String message) {
     if (!isInfoEnabledSupplier.get()) return;
