@@ -370,7 +370,7 @@ public class DeepCodeRestApiTest {
       throws InterruptedException {
     GetAnalysisResponse response = null;
     for (int i = 0; i < 120; i++) {
-      response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, severity, analysedFiles);
+      response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, severity, analysedFiles, bundleId);
       if (response.getStatus().equals("COMPLETE")) break;
       Thread.sleep(1000);
     }
