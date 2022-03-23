@@ -1,4 +1,5 @@
 ## [2.2.2] - 2022-03
+- fix: check file in marker for nullability before proceed
 - feat: provide unique (per project) `shard` to getAnalysis call
 
 ## [2.2.1] - 2021-12-10

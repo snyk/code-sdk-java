@@ -53,6 +53,7 @@ public abstract class PlatformDependentUtilsBase {
   @NotNull
   protected abstract String getProjectBasedFilePath(@NotNull Object file);
 
+  @Nullable
   public abstract Object getFileByDeepcodedPath(String path, Object project);
 
   public abstract Object[] getOpenProjects();
