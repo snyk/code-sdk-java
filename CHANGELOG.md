@@ -1,3 +1,6 @@
+## [2.2.2] - 2022-03
+- fix: check file in marker for nullability before proceed
+
 ## [2.2.1] - 2020-12-10
 - fix: don't upload empty files
 

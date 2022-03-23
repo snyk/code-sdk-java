@@ -679,6 +679,10 @@ public abstract class AnalysisDataBase {
                               (it.getFile() == null || it.getFile().isEmpty())
                                   ? file
                                   : pdUtils.getFileByDeepcodedPath(it.getFile(), project);
+                          if (fileForMarker == null) {
+                            dcLogger.logWarn("File not found for marker: " + it);
+                            return null;
+                          }
                           return parsePosition2MyTextRange(
                               it, fileForMarker, Collections.emptyMap());
                         })
