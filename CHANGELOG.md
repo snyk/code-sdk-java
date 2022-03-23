@@ -1,4 +1,8 @@
 ## [2.2.2] - 2022-03
+- fix: make 5 consequent attempts to getAnalysis during polling if operation does not succeed with 404
+- fix: make 5 attempts to re-upload files if operation does not succeed
+- fix: do not try to getAnalysis if `upload files` is not succeed (i.e. `missingFiles` is not empty after uploads)
+- fix: avoid remove operation for empty immutable List
 - fix: check file in marker for nullability before proceed
 - feat: provide unique (per project) `shard` to getAnalysis call
 
