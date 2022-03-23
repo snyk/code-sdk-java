@@ -4,18 +4,6 @@ plugins {
     id "signing"
 }
 
-plugins {
-  id "org.sonarqube" version "3.3"
-}
-
-sonarqube {
-  properties {
-    property "sonar.projectKey", "RafMo20D_code-sdk-java"
-    property "sonar.organization", "rafmo20d-1"
-    property "sonar.host.url", "https://sonarcloud.io"
-  }
-}
-
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
 version = "2.2.2"
@@ -122,8 +110,6 @@ publishing {
         }
     }
 }
-
-
 
 signing {
     sign publishing.publications.maven
