@@ -29,7 +29,7 @@ public abstract class DCLoggerBase {
     this.presentableName = presentableName;
   }
 
-  protected static final SimpleDateFormat  = new SimpleDateFormat("HH:mm:ss,S");
+
   protected static final SimpleDateFormat mmssSSS = new SimpleDateFormat("mm:ss,SSS");
 
   public void logInfo(String message) {
@@ -52,8 +52,6 @@ public abstract class DCLoggerBase {
               + (message.length() - 500)
               + " more symbols were cut]";
     }
-
-    String currentThread = " [" + Thread.currentThread().getName() + "] ";
 
     final String[] lines = message.split("[\n\r]");
     for (int i = 0; i < lines.length; i++) {
