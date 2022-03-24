@@ -4,7 +4,6 @@ plugins {
     id "signing"
 }
 
-
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
 version = "2.2.2"
