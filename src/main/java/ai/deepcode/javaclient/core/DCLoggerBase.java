@@ -30,7 +30,7 @@ public abstract class DCLoggerBase {
   }
 
   protected static final SimpleDateFormat  = new SimpleDateFormat("HH:mm:ss,S");
-  protected static final SimpleDateFormat  = new SimpleDateFormat("mm:ss,SSS");
+  protected static final SimpleDateFormat mmssSSS = new SimpleDateFormat("mm:ss,SSS");
 
   public void logInfo(String message) {
     if (!isInfoEnabledSupplier.get()) return;
