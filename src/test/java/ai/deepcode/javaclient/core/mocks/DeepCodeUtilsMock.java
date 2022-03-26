@@ -1,5 +1,6 @@
 package ai.deepcode.javaclient.core.mocks;
 
+import ai.deepcode.javaclient.DeepCodeRestApi;
 import ai.deepcode.javaclient.core.AnalysisDataBase;
 import ai.deepcode.javaclient.core.DCLoggerBase;
 import ai.deepcode.javaclient.core.DeepCodeIgnoreInfoHolderBase;
@@ -14,12 +15,14 @@ import java.util.Collections;
 public class DeepCodeUtilsMock extends DeepCodeUtilsBase {
 
   public DeepCodeUtilsMock(
-      @NotNull AnalysisDataBase analysisData,
-      @NotNull DeepCodeParamsBase deepCodeParams,
-      @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
-      @NotNull PlatformDependentUtilsBase pdUtils,
-      @NotNull DCLoggerBase dcLogger) {
-    super(analysisData, deepCodeParams, ignoreInfoHolder, pdUtils, dcLogger);
+    @NotNull AnalysisDataBase analysisData,
+    @NotNull DeepCodeParamsBase deepCodeParams,
+    @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
+    @NotNull PlatformDependentUtilsBase pdUtils,
+    @NotNull DCLoggerBase dcLogger,
+    @NotNull DeepCodeRestApi restApi
+  ) {
+    super(analysisData, deepCodeParams, ignoreInfoHolder, pdUtils, dcLogger, restApi);
   }
 
   @Override

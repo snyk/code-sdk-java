@@ -6,8 +6,8 @@ public class LoggerMock extends DCLoggerBase {
 
   public LoggerMock() {
     super(
-        () -> System.out::println,
-        () -> System.out::println,
+        () -> msg -> System.out.println("INFO " + msg),
+        () -> msg -> System.out.println("WARN " + msg),
         () -> true,
         () -> true,
         "ai.deepcode",

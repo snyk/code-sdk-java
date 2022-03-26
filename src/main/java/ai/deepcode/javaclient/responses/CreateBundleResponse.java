@@ -8,12 +8,11 @@ public class CreateBundleResponse extends EmptyResponse {
   private final List<String> missingFiles;
 
   public CreateBundleResponse() {
-    super();
-    this.bundleHash = "";
-    this.missingFiles = Collections.emptyList();
+    this("", Collections.emptyList());
   }
 
-  public CreateBundleResponse(String bundleHash, List<String> missingFiles, String uploadURL) {
+  public CreateBundleResponse(String bundleHash, List<String> missingFiles) {
+    super();
     this.bundleHash = bundleHash;
     this.missingFiles = missingFiles;
   }

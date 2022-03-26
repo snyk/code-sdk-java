@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
-public abstract class PlatformDependentUtilsAbstractMock extends PlatformDependentUtilsBase {
+public class PlatformDependentUtilsMock extends PlatformDependentUtilsBase {
 
   @Override
   public @NotNull Object getProject(@NotNull Object file) {

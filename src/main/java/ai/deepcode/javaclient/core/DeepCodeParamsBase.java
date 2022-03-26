@@ -19,17 +19,20 @@ public abstract class DeepCodeParamsBase {
   private String loginUrl;
   private String ideProductName;
   private Supplier<Long> getTimeoutForGettingAnalysesMs;
+  private final DeepCodeRestApi restApi;
 
   protected DeepCodeParamsBase(
-      boolean isEnable,
-      String apiUrl,
-      boolean disableSslVerification,
-      boolean useLinter,
-      int minSeverity,
-      String sessionToken,
-      String loginUrl,
-      String ideProductName,
-      Supplier<Long> getTimeoutForGettingAnalysesMs) {
+    boolean isEnable,
+    String apiUrl,
+    boolean disableSslVerification,
+    boolean useLinter,
+    int minSeverity,
+    String sessionToken,
+    String loginUrl,
+    String ideProductName,
+    Supplier<Long> getTimeoutForGettingAnalysesMs,
+    DeepCodeRestApi restApi
+  ) {
     this.isEnable = isEnable;
     this.apiUrl = apiUrl;
     this.disableSslVerification = disableSslVerification;
@@ -39,6 +42,7 @@ public abstract class DeepCodeParamsBase {
     this.loginUrl = loginUrl;
     this.ideProductName = ideProductName;
     this.getTimeoutForGettingAnalysesMs = getTimeoutForGettingAnalysesMs;
+    this.restApi = restApi;
   }
 
   public void clearLoginParams() {
@@ -100,7 +104,7 @@ public abstract class DeepCodeParamsBase {
     if (apiUrl.equals(this.apiUrl)) return;
     this.apiUrl = apiUrl;
     this.disableSslVerification = disableSslVerification;
-    DeepCodeRestApi.setBaseUrl(apiUrl, disableSslVerification, requestLogging);
+    restApi.setBaseUrl(apiUrl, disableSslVerification, requestLogging);
   }
 
   public boolean isDisableSslVerification() {

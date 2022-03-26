@@ -40,12 +40,15 @@ public abstract class AnalysisDataBase {
   private final HashContentUtilsBase hashContentUtils;
   private final DeepCodeParamsBase deepCodeParams;
   private final DCLoggerBase dcLogger;
+  private final DeepCodeRestApi restApi;
 
   protected AnalysisDataBase(
-      @NotNull PlatformDependentUtilsBase platformDependentUtils,
-      @NotNull HashContentUtilsBase hashContentUtils,
-      @NotNull DeepCodeParamsBase deepCodeParams,
-      @NotNull DCLoggerBase dcLogger) {
+    @NotNull PlatformDependentUtilsBase platformDependentUtils,
+    @NotNull HashContentUtilsBase hashContentUtils,
+    @NotNull DeepCodeParamsBase deepCodeParams,
+    @NotNull DCLoggerBase dcLogger,
+    @NotNull DeepCodeRestApi restApi
+  ) {
     this.pdUtils = platformDependentUtils;
     this.hashContentUtils = hashContentUtils;
     this.deepCodeParams = deepCodeParams;
@@ -53,6 +56,7 @@ public abstract class AnalysisDataBase {
     UPLOADING_FILES_TEXT = dcLogger.presentableName + ": Uploading files to the server... ";
     PREPARE_FILES_TEXT = dcLogger.presentableName + ": Preparing files for upload... ";
     WAITING_FOR_ANALYSIS_TEXT = dcLogger.presentableName + ": Waiting for analysis from server... ";
+    this.restApi = restApi;
   }
 
   private final String UPLOADING_FILES_TEXT;
@@ -485,7 +489,7 @@ public abstract class AnalysisDataBase {
   @Nullable
   private List<String> checkBundle(@NotNull Object project, @NotNull String bundleId) {
     CreateBundleResponse checkBundleResponse =
-        DeepCodeRestApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
+        restApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
     if (isNotSucceed(project, checkBundleResponse, "Bad CheckBundle request: ")) {
       return null;
     }
@@ -519,10 +523,10 @@ public abstract class AnalysisDataBase {
     final CreateBundleResponse bundleResponse;
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
-      bundleResponse = DeepCodeRestApi.createBundle(deepCodeParams.getSessionToken(), request);
+      bundleResponse = restApi.createBundle(deepCodeParams.getSessionToken(), request);
     else {
       bundleResponse =
-          DeepCodeRestApi.extendBundle(
+          restApi.extendBundle(
               deepCodeParams.getSessionToken(),
               parentBundleId,
               new ExtendBundleWithHashRequest(request, removedFiles));
@@ -562,7 +566,7 @@ public abstract class AnalysisDataBase {
 
     // todo make network request in parallel with collecting data
     EmptyResponse uploadFilesResponse =
-        DeepCodeRestApi.extendBundle(
+        restApi.extendBundle(
             deepCodeParams.getSessionToken(),
             bundleId,
             new ExtendBundleWithContentRequest(files, Collections.emptyList()));
@@ -584,7 +588,7 @@ public abstract class AnalysisDataBase {
     do {
       if (counter > 0) pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY, progress);
       response =
-          DeepCodeRestApi.getAnalysis(
+          restApi.getAnalysis(
               deepCodeParams.getSessionToken(),
               bundleId,
               deepCodeParams.getMinSeverity(),
