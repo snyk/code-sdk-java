@@ -593,8 +593,9 @@ public abstract class AnalysisDataBase {
               bundleId,
               deepCodeParams.getMinSeverity(),
               filesToAnalyse,
-              HashContentUtilsBase.calculateHash(pdUtils.getProjectName(project))
-          );
+              HashContentUtilsBase.calculateHash(pdUtils.getProjectName(project)),
+              deepCodeParams.getIdeProductName(),
+              deepCodeParams.getOrgDisplayName());
 
       pdUtils.progressCheckCanceled(progress);
       dcLogger.logInfo(response.toString());

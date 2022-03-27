@@ -335,12 +335,19 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   @Override
   @NotNull
   public GetAnalysisResponse getAnalysis(
-    String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard) {
+    String token,
+    String bundleId,
+    Integer severity,
+    List<String> filesToAnalyse,
+    String shard,
+    String ideProductName,
+    String orgDisplayName
+  ) {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
           getAnalysisCall
-              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard))
+              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgDisplayName))
               .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();

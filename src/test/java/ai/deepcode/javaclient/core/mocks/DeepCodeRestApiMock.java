@@ -36,7 +36,15 @@ public class DeepCodeRestApiMock implements DeepCodeRestApi {
   }
 
   @Override
-  public @NotNull GetAnalysisResponse getAnalysis(String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard) {
+  public @NotNull GetAnalysisResponse getAnalysis(
+    String token,
+    String bundleId,
+    Integer severity,
+    List<String> filesToAnalyse,
+    String shard,
+    String ideProductName,
+    String orgDisplayName
+  ) {
     throw new UnsupportedOperationException();
   }
 
