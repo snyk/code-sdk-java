@@ -86,7 +86,7 @@ public abstract class RunUtilsBase {
   private static final Map<Object, Set<Object>> mapProject2Progresses = new ConcurrentHashMap<>();
 
   protected static synchronized Set<Object> getRunningProgresses(@NotNull Object project) {
-    return mapProject2Progresses.computeIfAbsent(project, p -> new HashSet<>());
+    return mapProject2Progresses.computeIfAbsent(project, p -> ConcurrentHashMap.newKeySet());
   }
 
   // ??? list of all running background tasks
