@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class DeepCodeRestApiTest {
+public class DeepCodeRestApiImplTest {
 
   private final String testFileContent =
       "public class AnnotatorTest {\n"
@@ -55,6 +55,8 @@ public class DeepCodeRestApiTest {
 
   private static String bundleId = null;
 
+  private static final DeepCodeRestApi restApiClient = new DeepCodeRestApiImpl();
+
   @Test
   public void _022_setBaseUrl() {
     System.out.println("\n--------------Set base URL----------------\n");
@@ -63,13 +65,13 @@ public class DeepCodeRestApiTest {
       doSetBaseUrlTest("https://www.google.com/", 404);
       doSetBaseUrlTest("https://deeproxy.snyk.io/", 401);
     } finally {
-      DeepCodeRestApi.setBaseUrl("");
+      restApiClient.setBaseUrl("", false, false);
     }
   }
 
   private void doSetBaseUrlTest(String baseUrl, int expectedStatusCode) {
-    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
-    EmptyResponse response = DeepCodeRestApi.checkBundle("blabla", "irrelevant");
+    restApiClient.setBaseUrl(baseUrl, false, true);
+    EmptyResponse response = restApiClient.checkBundle("blabla", "irrelevant");
     int status = response.getStatusCode();
     String description = response.getStatusDescription();
     System.out.printf(
@@ -81,7 +83,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _025_getFilters() {
     System.out.println("\n--------------Get Filters----------------\n");
-    GetFiltersResponse response = DeepCodeRestApi.getFilters(loggedToken);
+    GetFiltersResponse response = restApiClient.getFilters(loggedToken);
     assertNotNull(response);
     final String errorMsg =
         "Get Filters return status code: ["
@@ -99,7 +101,7 @@ public class DeepCodeRestApiTest {
   @Test
   public void _030_createBundle_from_source() throws NoSuchAlgorithmException {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
-    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
+    restApiClient.setBaseUrl(baseUrl, false, true);
     CreateBundleResponse response = createBundleFromSource(loggedToken);
     assertNotNull(response);
     System.out.printf(
@@ -116,7 +118,7 @@ public class DeepCodeRestApiTest {
     fileContent.put(
         "/AnnotatorTest.java",
         new FileHash2ContentRequest(getHash(testFileContent), testFileContent));
-    CreateBundleResponse response = DeepCodeRestApi.createBundle(token, fileContent);
+    CreateBundleResponse response = restApiClient.createBundle(token, fileContent);
     return response;
   }
 
@@ -145,7 +147,7 @@ public class DeepCodeRestApiTest {
   @NotNull
   private CreateBundleResponse createBundleWithHash() {
     FileHashRequest files = createFileHashRequest(null);
-    CreateBundleResponse response = DeepCodeRestApi.createBundle(loggedToken, files);
+    CreateBundleResponse response = restApiClient.createBundle(loggedToken, files);
     assertNotNull(response);
     System.out.printf(
         "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -161,7 +163,7 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------Check Bundle----------------\n");
     FileHashRequest fileHashRequest = createFileHashRequest(null);
     CreateBundleResponse createBundleResponse =
-        DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
+        restApiClient.createBundle(loggedToken, fileHashRequest);
     assertNotNull(createBundleResponse);
     System.out.printf(
         "\nCreate Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -173,7 +175,7 @@ public class DeepCodeRestApiTest {
     assertFalse("List of missingFiles is empty.", createBundleResponse.getMissingFiles().isEmpty());
 
     CreateBundleResponse checkBundleResponse =
-        DeepCodeRestApi.checkBundle(loggedToken, createBundleResponse.getBundleHash());
+        restApiClient.checkBundle(loggedToken, createBundleResponse.getBundleHash());
     assertNotNull(checkBundleResponse);
     System.out.printf(
         "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -199,7 +201,7 @@ public class DeepCodeRestApiTest {
     assertEquals(200, uploadFileResponse.getStatusCode());
 
     CreateBundleResponse createBundleResponse1 =
-        DeepCodeRestApi.checkBundle(loggedToken, createBundleResponse.getBundleHash());
+        restApiClient.checkBundle(loggedToken, createBundleResponse.getBundleHash());
     assertNotNull(createBundleResponse1);
     System.out.printf(
         "\nCheck Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -217,7 +219,7 @@ public class DeepCodeRestApiTest {
   }
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
-    DeepCodeRestApi.setBaseUrl(baseUrl, false, true);
+    restApiClient.setBaseUrl(baseUrl, false, true);
     final File testFile =
         new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     String absolutePath = testFile.getAbsolutePath();
@@ -284,7 +286,7 @@ public class DeepCodeRestApiTest {
     ExtendBundleWithHashRequest extendBundleWithHashRequest =
         new ExtendBundleWithHashRequest(newFileHashRequest, Collections.emptyList());
     CreateBundleResponse extendBundleResponse =
-        DeepCodeRestApi.extendBundle(
+        restApiClient.extendBundle(
             loggedToken, createBundleResponse.getBundleHash(), extendBundleWithHashRequest);
     assertNotNull(extendBundleResponse);
     System.out.printf(
@@ -302,7 +304,7 @@ public class DeepCodeRestApiTest {
     System.out.println("\n--------------Upload Files by Hash----------------\n");
     FileHashRequest fileHashRequest = createFileHashRequest(null);
     CreateBundleResponse createBundleResponse =
-        DeepCodeRestApi.createBundle(loggedToken, fileHashRequest);
+        restApiClient.createBundle(loggedToken, fileHashRequest);
     assertNotNull(createBundleResponse);
     System.out.printf(
         "Create Bundle call return:\nStatus code [%1$d] %3$s \n bundleId: %2$s\n missingFiles: %4$s\n",
@@ -345,7 +347,7 @@ public class DeepCodeRestApiTest {
     map.put(filePath, new FileHash2ContentRequest(fileHash, fileText));
     ExtendBundleWithContentRequest ebr =
         new ExtendBundleWithContentRequest(map, Collections.emptyList());
-    return DeepCodeRestApi.extendBundle(loggedToken, createBundleResponse.getBundleHash(), ebr);
+    return restApiClient.extendBundle(loggedToken, createBundleResponse.getBundleHash(), ebr);
   }
 
   @Test
@@ -370,7 +372,7 @@ public class DeepCodeRestApiTest {
       throws InterruptedException {
     GetAnalysisResponse response = null;
     for (int i = 0; i < 120; i++) {
-      response = DeepCodeRestApi.getAnalysis(loggedToken, bundleId, severity, analysedFiles, bundleId);
+      response = restApiClient.getAnalysis(loggedToken, bundleId, severity, analysedFiles, bundleId);
       if (response.getStatus().equals("COMPLETE")) break;
       Thread.sleep(1000);
     }

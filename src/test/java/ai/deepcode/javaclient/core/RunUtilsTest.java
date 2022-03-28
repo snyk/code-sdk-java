@@ -1,12 +1,14 @@
 package ai.deepcode.javaclient.core;
 
+import ai.deepcode.javaclient.DeepCodeRestApi;
 import ai.deepcode.javaclient.core.mocks.AnalysisDataBaseMock;
 import ai.deepcode.javaclient.core.mocks.DeepCodeIgnoreInfoHolderMock;
 import ai.deepcode.javaclient.core.mocks.DeepCodeParamsMock;
+import ai.deepcode.javaclient.core.mocks.DeepCodeRestApiMock;
 import ai.deepcode.javaclient.core.mocks.DeepCodeUtilsMock;
 import ai.deepcode.javaclient.core.mocks.HashContentUtilsMock;
 import ai.deepcode.javaclient.core.mocks.LoggerMock;
-import ai.deepcode.javaclient.core.mocks.PlatformDependentUtilsAbstractMock;
+import ai.deepcode.javaclient.core.mocks.PlatformDependentUtilsMock;
 import ai.deepcode.javaclient.core.mocks.RunUtilsBaseMock;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -23,9 +25,11 @@ public class RunUtilsTest {
     final boolean[] isFullRescanRequested = {true};
 
     // ---------------------------- setup --------------------------
-    final PlatformDependentUtilsBase pdUtils = new PlatformDependentUtilsAbstractMock() {};
-    final DeepCodeParamsBase deepCodeParams = new DeepCodeParamsMock();
+    final PlatformDependentUtilsBase pdUtils = new PlatformDependentUtilsMock() {};
     final DCLoggerBase dcLogger = new LoggerMock();
+    final DeepCodeRestApi restApi = new DeepCodeRestApiMock();
+
+    final DeepCodeParamsBase deepCodeParams = new DeepCodeParamsMock(restApi);
 
     final HashContentUtilsBase hashContentUtils = new HashContentUtilsMock(pdUtils);
 
@@ -33,7 +37,7 @@ public class RunUtilsTest {
         new DeepCodeIgnoreInfoHolderMock(hashContentUtils, pdUtils, dcLogger);
 
     final AnalysisDataBase analysisData =
-        new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger) {
+        new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi) {
           @Override
           public void updateCachedResultsForFiles(
               @NotNull Object project,
@@ -42,7 +46,7 @@ public class RunUtilsTest {
         };
 
     final DeepCodeUtilsBase deepCodeUtils =
-        new DeepCodeUtilsMock(analysisData, deepCodeParams, ignoreInfoHolder, pdUtils, dcLogger);
+        new DeepCodeUtilsMock(analysisData, deepCodeParams, ignoreInfoHolder, pdUtils, dcLogger, restApi);
 
     final String project = "Project";
 

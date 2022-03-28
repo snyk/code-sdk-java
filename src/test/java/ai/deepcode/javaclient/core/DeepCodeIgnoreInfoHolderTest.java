@@ -3,7 +3,7 @@ package ai.deepcode.javaclient.core;
 import ai.deepcode.javaclient.core.mocks.DeepCodeIgnoreInfoHolderMock;
 import ai.deepcode.javaclient.core.mocks.HashContentUtilsMock;
 import ai.deepcode.javaclient.core.mocks.LoggerMock;
-import ai.deepcode.javaclient.core.mocks.PlatformDependentUtilsAbstractMock;
+import ai.deepcode.javaclient.core.mocks.PlatformDependentUtilsMock;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
@@ -125,7 +125,7 @@ public class DeepCodeIgnoreInfoHolderTest {
   }
 
   private PlatformDependentUtilsBase pdUtils =
-      new PlatformDependentUtilsAbstractMock() {
+      new PlatformDependentUtilsMock() {
         @Override
         public @NotNull Object getProject(@NotNull Object file) {
           final String filePath = ((File) file).getPath();

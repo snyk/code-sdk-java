@@ -15,18 +15,22 @@ public abstract class DeepCodeUtilsBase {
   private final DeepCodeIgnoreInfoHolderBase ignoreInfoHolder;
   private final PlatformDependentUtilsBase pdUtils;
   private final DCLoggerBase dcLogger;
+  private final DeepCodeRestApi restApi;
 
   protected DeepCodeUtilsBase(
     @NotNull AnalysisDataBase analysisData,
     @NotNull DeepCodeParamsBase deepCodeParams,
     @NotNull DeepCodeIgnoreInfoHolderBase ignoreInfoHolder,
     @NotNull PlatformDependentUtilsBase pdUtils,
-    @NotNull DCLoggerBase dcLogger) {
+    @NotNull DCLoggerBase dcLogger,
+    @NotNull DeepCodeRestApi restApi
+  ) {
     this.analysisData = analysisData;
     this.deepCodeParams = deepCodeParams;
     this.ignoreInfoHolder = ignoreInfoHolder;
     this.pdUtils = pdUtils;
     this.dcLogger = dcLogger;
+    this.restApi = restApi;
     initSupportedExtentionsAndConfigFiles();
   }
 
@@ -89,7 +93,7 @@ public abstract class DeepCodeUtilsBase {
    */
   private void initSupportedExtentionsAndConfigFiles() {
     GetFiltersResponse filtersResponse =
-      DeepCodeRestApi.getFilters(deepCodeParams.getSessionToken());
+      restApi.getFilters(deepCodeParams.getSessionToken());
     if (filtersResponse.getStatusCode() == 200) {
       supportedExtensions =
         filtersResponse.getExtensions().stream()

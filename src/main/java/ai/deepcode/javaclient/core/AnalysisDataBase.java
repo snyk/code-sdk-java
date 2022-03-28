@@ -40,12 +40,15 @@ public abstract class AnalysisDataBase {
   private final HashContentUtilsBase hashContentUtils;
   private final DeepCodeParamsBase deepCodeParams;
   private final DCLoggerBase dcLogger;
+  private final DeepCodeRestApi restApi;
 
   protected AnalysisDataBase(
-      @NotNull PlatformDependentUtilsBase platformDependentUtils,
-      @NotNull HashContentUtilsBase hashContentUtils,
-      @NotNull DeepCodeParamsBase deepCodeParams,
-      @NotNull DCLoggerBase dcLogger) {
+    @NotNull PlatformDependentUtilsBase platformDependentUtils,
+    @NotNull HashContentUtilsBase hashContentUtils,
+    @NotNull DeepCodeParamsBase deepCodeParams,
+    @NotNull DCLoggerBase dcLogger,
+    @NotNull DeepCodeRestApi restApi
+  ) {
     this.pdUtils = platformDependentUtils;
     this.hashContentUtils = hashContentUtils;
     this.deepCodeParams = deepCodeParams;
@@ -53,6 +56,7 @@ public abstract class AnalysisDataBase {
     UPLOADING_FILES_TEXT = dcLogger.presentableName + ": Uploading files to the server... ";
     PREPARE_FILES_TEXT = dcLogger.presentableName + ": Preparing files for upload... ";
     WAITING_FOR_ANALYSIS_TEXT = dcLogger.presentableName + ": Waiting for analysis from server... ";
+    this.restApi = restApi;
   }
 
   private final String UPLOADING_FILES_TEXT;
@@ -204,9 +208,12 @@ public abstract class AnalysisDataBase {
       @NotNull Collection<Object> allProjectFiles,
       @NotNull Object progress) {
     Collection<Object> filesToRemove = mapProject2RemovedFiles.remove(project);
-    if (filesToRemove == null) filesToRemove = Collections.emptyList();
-    // remove from server only files physically removed from Project
-    filesToRemove.removeAll(allProjectFiles);
+    if (filesToRemove == null) {
+      filesToRemove = Collections.emptyList();
+    } else {
+      // remove from server only files physically removed from Project
+      filesToRemove.removeAll(allProjectFiles);
+    }
     if (allProjectFiles.isEmpty() && filesToRemove.isEmpty()) {
       dcLogger.logWarn("updateCachedResultsForFiles requested for empty list of files");
       return;
@@ -304,7 +311,11 @@ public abstract class AnalysisDataBase {
     if (filesToProceed.isEmpty()) { // no sense to proceed
       return EMPTY_MAP;
     }
-    uploadFilesStep(project, filesToProceed, missingFiles, progress);
+    boolean filesUploaded = uploadFilesStep(project, filesToProceed, missingFiles, progress);
+    if (!filesUploaded) { // no sense to proceed
+      dcLogger.logWarn("Files upload FAIL");
+      return EMPTY_MAP;
+    }
 
     // ---------------------------------------- Get Analysis
     final String bundleId = mapProject2BundleId.getOrDefault(project, "");
@@ -385,7 +396,7 @@ public abstract class AnalysisDataBase {
   }
 
   /** Perform costly network request. <b>No cache checks!</b> */
-  private void uploadFilesStep(
+  private boolean uploadFilesStep(
       @NotNull Object project,
       @NotNull Collection<Object> filesToProceed,
       @NotNull List<String> missingFiles,
@@ -401,24 +412,26 @@ public abstract class AnalysisDataBase {
       dcLogger.logInfo("No missingFiles to Upload");
     } else {
       final int attempts = 5;
-      for (int counter = 0; counter < attempts; counter++) {
-        uploadFiles(project, filesToProceed, missingFiles, bundleId, progress);
-        missingFiles = checkBundle(project, bundleId);
-        if (missingFiles.isEmpty()) {
-          break;
-        } else {
+      int counter = 0;
+      while (!missingFiles.isEmpty() && counter < attempts) {
+        if (counter > 0) {
           dcLogger.logWarn(
               "Check Bundle found "
                   + missingFiles.size()
-                  + " missingFiles (NOT uploaded), will try to upload "
+                  + " missingFiles (NOT uploaded), will try to re-upload "
                   + (attempts - counter)
                   + " more times:\nmissingFiles = "
                   + missingFiles);
         }
+        uploadFiles(project, filesToProceed, missingFiles, bundleId, progress);
+        List<String> newMissingFiles = checkBundle(project, bundleId);
+        missingFiles = (newMissingFiles != null) ? newMissingFiles : missingFiles;
+        counter++;
       }
     }
     dcLogger.logInfo(
         "--- Upload Files took: " + (System.currentTimeMillis() - startTime) + " milliseconds");
+    return missingFiles.isEmpty();
   }
 
   private void uploadFiles(
@@ -471,14 +484,14 @@ public abstract class AnalysisDataBase {
   /**
    * Checks the status of a bundle: if there are still missing files after uploading
    *
-   * @return list of the current missingFiles.
+   * @return list of the current missingFiles or NULL if not succeed.
    */
-  @NotNull
+  @Nullable
   private List<String> checkBundle(@NotNull Object project, @NotNull String bundleId) {
     CreateBundleResponse checkBundleResponse =
-        DeepCodeRestApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
+        restApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
     if (isNotSucceed(project, checkBundleResponse, "Bad CheckBundle request: ")) {
-      return Collections.emptyList();
+      return null;
     }
     return checkBundleResponse.getMissingFiles();
   }
@@ -510,10 +523,10 @@ public abstract class AnalysisDataBase {
     final CreateBundleResponse bundleResponse;
     // check if bundleID for the project already been created
     if (parentBundleId.isEmpty())
-      bundleResponse = DeepCodeRestApi.createBundle(deepCodeParams.getSessionToken(), request);
+      bundleResponse = restApi.createBundle(deepCodeParams.getSessionToken(), request);
     else {
       bundleResponse =
-          DeepCodeRestApi.extendBundle(
+          restApi.extendBundle(
               deepCodeParams.getSessionToken(),
               parentBundleId,
               new ExtendBundleWithHashRequest(request, removedFiles));
@@ -553,7 +566,7 @@ public abstract class AnalysisDataBase {
 
     // todo make network request in parallel with collecting data
     EmptyResponse uploadFilesResponse =
-        DeepCodeRestApi.extendBundle(
+        restApi.extendBundle(
             deepCodeParams.getSessionToken(),
             bundleId,
             new ExtendBundleWithContentRequest(files, Collections.emptyList()));
@@ -568,12 +581,14 @@ public abstract class AnalysisDataBase {
       List<String> filesToAnalyse) {
     GetAnalysisResponse response;
     int counter = 0;
+    int failWith404counts = 0;
     final long timeout = deepCodeParams.getTimeoutForGettingAnalysesMs();
     final long attempts = timeout / PlatformDependentUtilsBase.DEFAULT_DELAY;
+    final long endTime = System.currentTimeMillis() + timeout;
     do {
       if (counter > 0) pdUtils.delay(PlatformDependentUtilsBase.DEFAULT_DELAY, progress);
       response =
-          DeepCodeRestApi.getAnalysis(
+          restApi.getAnalysis(
               deepCodeParams.getSessionToken(),
               bundleId,
               deepCodeParams.getMinSeverity(),
@@ -583,8 +598,15 @@ public abstract class AnalysisDataBase {
 
       pdUtils.progressCheckCanceled(progress);
       dcLogger.logInfo(response.toString());
-      if (isNotSucceed(project, response, "Bad GetAnalysis request: "))
-        return new GetAnalysisResponse();
+      if (isNotSucceed(project, response, "Bad GetAnalysis request: ")) {
+        if (response.getStatusCode() != 404 || failWith404counts >= 5) {
+          return new GetAnalysisResponse();
+        } else {
+          failWith404counts++;
+        }
+      } else {
+        failWith404counts = 0;
+      }
 
       double responseProgress = response.getProgress();
       if (responseProgress <= 0 || responseProgress > 1) {
@@ -594,7 +616,7 @@ public abstract class AnalysisDataBase {
       pdUtils.progressSetText(
           progress, WAITING_FOR_ANALYSIS_TEXT + (int) (responseProgress * 100) + "% done");
 
-      if (counter >= attempts) {
+      if (System.currentTimeMillis() >= endTime) {
         dcLogger.logWarn("Timeout expire for waiting analysis results.");
         pdUtils.showWarn(
             "Can't get analysis results from the server. Timeout of "
