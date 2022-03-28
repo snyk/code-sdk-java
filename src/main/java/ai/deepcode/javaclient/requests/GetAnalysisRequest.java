@@ -25,7 +25,9 @@ public class GetAnalysisRequest {
     List<String> limitToFiles,
     Integer severity,
     String shard,
-    String ideProductName, String orgDisplayName, boolean prioritized,
+    String ideProductName,
+    String orgDisplayName,
+    boolean prioritized,
     boolean legacy
   ) {
     this.key = new GetAnalysisKey(bundleHash, limitToFiles, shard);
