@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 public class DeepCodeParamsMock extends DeepCodeParamsBase {
 
   public DeepCodeParamsMock(DeepCodeRestApi restApi) {
-    super(true, "", false, false, 1, "", "", "", () -> 1000L, restApi);
+    super(true, "", false, false, 1, "", "", "", "", () -> 1000L, restApi);
   }
 
   @Override

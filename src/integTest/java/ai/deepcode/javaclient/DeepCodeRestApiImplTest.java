@@ -372,7 +372,15 @@ public class DeepCodeRestApiImplTest {
       throws InterruptedException {
     GetAnalysisResponse response = null;
     for (int i = 0; i < 120; i++) {
-      response = restApiClient.getAnalysis(loggedToken, bundleId, severity, analysedFiles, bundleId);
+      response = restApiClient.getAnalysis(
+        loggedToken,
+        bundleId,
+        severity,
+        analysedFiles,
+        bundleId,
+        "test-java-client-ide",
+        "test-java-client-org"
+      );
       if (response.getStatus().equals("COMPLETE")) break;
       Thread.sleep(1000);
     }

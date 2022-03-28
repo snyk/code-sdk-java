@@ -4,7 +4,9 @@
 - fix: do not try to getAnalysis if `upload files` is not succeed (i.e. `missingFiles` is not empty after uploads)
 - fix: avoid remove operation for empty immutable List
 - fix: check file in marker for nullability before proceed
+- fix: internal ConcurrentModificationException 
 - feat: provide unique (per project) `shard` to getAnalysis call
+- feat: provide `analysisContext` key (`getAnalysis` request) for better tracking/logging on backend
 - chore: reshape/refactor REST API wrapper to be replaceable through constructor base DI
 
 ## [2.2.1] - 2021-12-10

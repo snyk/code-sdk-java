@@ -104,7 +104,15 @@ public class AnalysisDataTest {
   public void if_file_upload_fail_getAnalysis_should_not_be_invoked() {
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
-      public @NotNull GetAnalysisResponse getAnalysis(String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard) {
+      public @NotNull GetAnalysisResponse getAnalysis(
+        String token,
+        String bundleId,
+        Integer severity,
+        List<String> filesToAnalyse,
+        String shard,
+        String ideProductName,
+        String orgDisplayName
+      ) {
         throw new RuntimeException("getAnalysis should NOT be invoked");
       }
     };
@@ -158,7 +166,15 @@ public class AnalysisDataTest {
       }
 
       @Override
-      public @NotNull GetAnalysisResponse getAnalysis(String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard) {
+      public @NotNull GetAnalysisResponse getAnalysis(
+        String token,
+        String bundleId,
+        Integer severity,
+        List<String> filesToAnalyse,
+        String shard,
+        String ideProductName,
+        String orgDisplayName
+      ) {
         final GetAnalysisResponse response = Objects.requireNonNull(responses.poll());
         if (response.getStatus().equals(COMPLETE)) {
           isCompleted[0] = true;

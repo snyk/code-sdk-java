@@ -57,7 +57,14 @@ public interface DeepCodeRestApi {
    * @return {@link GetAnalysisResponse} instance}
    */
   @NotNull GetAnalysisResponse getAnalysis(
-    String token, String bundleId, Integer severity, List<String> filesToAnalyse, String shard);
+    String token,
+    String bundleId,
+    Integer severity,
+    List<String> filesToAnalyse,
+    String shard,
+    String ideProductName,
+    String orgDisplayName
+  );
 
   /**
    * Requests current filtering options for uploaded bundles.

@@ -18,6 +18,7 @@ public abstract class DeepCodeParamsBase {
   // Inner params
   private String loginUrl;
   private String ideProductName;
+  private String orgDisplayName;
   private Supplier<Long> getTimeoutForGettingAnalysesMs;
   private final DeepCodeRestApi restApi;
 
@@ -30,6 +31,7 @@ public abstract class DeepCodeParamsBase {
     String sessionToken,
     String loginUrl,
     String ideProductName,
+    String orgDisplayName,
     Supplier<Long> getTimeoutForGettingAnalysesMs,
     DeepCodeRestApi restApi
   ) {
@@ -41,6 +43,7 @@ public abstract class DeepCodeParamsBase {
     this.sessionToken = sessionToken;
     this.loginUrl = loginUrl;
     this.ideProductName = ideProductName;
+    this.orgDisplayName = orgDisplayName;
     this.getTimeoutForGettingAnalysesMs = getTimeoutForGettingAnalysesMs;
     this.restApi = restApi;
   }
@@ -133,5 +136,9 @@ public abstract class DeepCodeParamsBase {
 
   public long getTimeoutForGettingAnalysesMs() {
     return getTimeoutForGettingAnalysesMs.get();
+  }
+
+  public String getOrgDisplayName() {
+    return orgDisplayName;
   }
 }
