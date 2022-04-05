@@ -15,6 +15,9 @@ import ai.deepcode.javaclient.responses.Suggestions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -37,6 +40,16 @@ public class AnalysisDataTest {
     @Override
     public @NotNull String getProjectName(@NotNull Object project) {
       return project.toString();
+    }
+
+    @Override
+    public @NotNull String getFileName(@NotNull Object file) {
+      return "testFileName";
+    }
+
+    @Override
+    public long getFileSize(@NotNull Object file) {
+      return getFileName(file).length();
     }
   };
 
@@ -77,7 +90,7 @@ public class AnalysisDataTest {
 
   // make 5 attempts to re-upload files if operation does not succeed
   @Test
-  public void reupload_files_if_initial_upload_does_not_succeed() {
+  public void reupload_files_if_initial_upload_does_not_succeed() throws IOException {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
       @Override
@@ -94,9 +107,13 @@ public class AnalysisDataTest {
     final String project = "Project1";
     final String progress = "Progress Indicator";
 
-    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+    File file = File.createTempFile("analysisDataTest","tmp");
+    file.deleteOnExit();
+    Files.writeString(file.toPath(), "testtestest");
 
-    assertEquals("Should be made 5 attempts to re-upload files if operation does not succeed", 5, reUploadCounter[0]);
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton(file), progress);
+
+    assertEquals("Should have made 10 attempts to re-upload files if operation does not succeed", 10, reUploadCounter[0]);
   }
 
   // do not try to getAnalysis if `upload files` is not succeed (i.e. `missingFiles` is not empty after uploads)
