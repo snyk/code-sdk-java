@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public abstract class AnalysisDataBase {
 
   public static final String COMPLETE = "COMPLETE";
+  public static final int MAX_FILE_SIZE = 1024 * 1024;
   private final PlatformDependentUtilsBase pdUtils;
   private final HashContentUtilsBase hashContentUtils;
   private final DeepCodeParamsBase deepCodeParams;
@@ -234,6 +235,7 @@ public abstract class AnalysisDataBase {
           allProjectFiles.stream()
               .filter(Objects::nonNull)
               .filter(file -> !mapFile2Suggestions.containsKey(file))
+              .filter(file -> pdUtils.getFileSize(file) > 0 && pdUtils.getFileSize(file) < MAX_FILE_SIZE)
               .collect(Collectors.toSet());
       if (!filesToProceed.isEmpty()) {
         // collection already checked to be not empty
@@ -411,7 +413,7 @@ public abstract class AnalysisDataBase {
     } else if (missingFiles.isEmpty()) {
       dcLogger.logInfo("No missingFiles to Upload");
     } else {
-      final int attempts = 5;
+      final int attempts = 10;
       int counter = 0;
       while (!missingFiles.isEmpty() && counter < attempts) {
         if (counter > 0) {
