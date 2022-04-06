@@ -235,7 +235,6 @@ public abstract class AnalysisDataBase {
           allProjectFiles.stream()
               .filter(Objects::nonNull)
               .filter(file -> !mapFile2Suggestions.containsKey(file))
-              .filter(file -> pdUtils.getFileSize(file) > 0 && pdUtils.getFileSize(file) < MAX_FILE_SIZE)
               .collect(Collectors.toSet());
       if (!filesToProceed.isEmpty()) {
         // collection already checked to be not empty
