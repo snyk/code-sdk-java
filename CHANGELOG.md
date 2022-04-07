@@ -1,3 +1,7 @@
+## [2.3.1] - 2022-04
+- fix: adjust max file size to the correct size of 1MB (previously: 4000 bytes)
+- chore: update upload attemps to 10
+
 ## [2.3.0] - 2022-03
 - fix: make 5 consequent attempts to getAnalysis during polling if operation does not succeed with 404
 - fix: make 5 attempts to re-upload files if operation does not succeed

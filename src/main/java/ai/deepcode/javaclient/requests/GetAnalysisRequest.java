@@ -16,7 +16,7 @@ public class GetAnalysisRequest {
    * @param severity
    * @param shard          uniq String (hash) per Project to optimize jobs on backend (run on the same worker to reuse caches)
    * @param ideProductName specific IDE
-   * @param orgDisplayName client’s snyk organization name
+   * @param orgDisplayName clients snyk organization name
    * @param prioritized
    * @param legacy
    */

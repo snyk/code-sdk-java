@@ -70,7 +70,7 @@ public abstract class DeepCodeUtilsBase {
 
   protected abstract Collection<Object> allProjectFiles(@NotNull Object project);
 
-  private static final long MAX_FILE_SIZE = 4000000; // ~ 4MB in bytes
+  private static final long MAX_FILE_SIZE = 1024*1024; // 1MB in bytes
 
   public boolean isSupportedFileFormat(@NotNull Object file) {
     // DCLogger.getInstance().info("isSupportedFileFormat started for " + psiFile.getName());
