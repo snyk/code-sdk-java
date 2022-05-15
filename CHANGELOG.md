@@ -1,3 +1,6 @@
+## [2.3.2] - 2022-05
+- fix: make re-try attempts for most api calls if not succeed for any reason (except 401 - auth failed)
+
 ## [2.3.1] - 2022-04
 - fix: adjust max file size to the correct size of 1MB (previously: 4000 bytes)
 - chore: update upload attemps to 10

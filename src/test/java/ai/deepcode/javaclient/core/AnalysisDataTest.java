@@ -67,32 +67,106 @@ public class AnalysisDataTest {
   AnalysisDataBase analysisData;
 
   private static class RestApiMockWithBrokenFileUpload extends DeepCodeRestApiMock {
-    private final CreateBundleResponse fakeBundleResponse =
+    protected final CreateBundleResponse bundleResponseWithMissedFile =
       new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
+
+    protected final CreateBundleResponse bundleResponseWithoutMissedFile =
+      new CreateBundleResponse("bundleHash", Collections.emptyList());
 
     @Override
     public @NotNull CreateBundleResponse createBundle(String token, FileHashRequest files) {
-      return fakeBundleResponse;
+      return bundleResponseWithMissedFile;
     }
 
     @Override
     public @NotNull <Req> CreateBundleResponse extendBundle(String token, String bundleId, Req request) {
-      return fakeBundleResponse;
+      return bundleResponseWithMissedFile;
     }
 
     @Override
     public @NotNull CreateBundleResponse checkBundle(String token, String bundleId) {
-      return fakeBundleResponse;
+      return bundleResponseWithMissedFile;
     }
   }
 
-  ;
+  // make 3 attempts to re-createBundle if operation does not succeed
+  @Test
+  public void re_createBundle_if_createBundle_fail_with_404() {
+    final int[] reUploadCounter = {0};
+    restApi = new RestApiMockWithBrokenFileUpload() {
+      @Override
+      public @NotNull CreateBundleResponse createBundle(String token, FileHashRequest files) {
+        reUploadCounter[0] = reUploadCounter[0] + 1;
+        return super.createBundle(token, files);
+      }
+    };
 
-  // make 5 attempts to re-upload files if operation does not succeed
+    deepCodeParams = new DeepCodeParamsMock(restApi);
+    analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
+
+    // --------------------------- actual test --------------------
+    final String project = "Project4";
+    final String progress = "Progress Indicator";
+
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+
+    assertEquals("Should be made 3 attempts to re-create bundle if operation does not succeed", 3, reUploadCounter[0]);
+  }
+
+  // make 2 attempts to re-createBundle (+1 initial attempt) if extendBundle does not succeed
+  @Test
+  public void re_createBundle_if_extendBundle_fail_with_404() {
+    // create bundle in cache
+    restApi = new RestApiMockWithBrokenFileUpload() {};
+    deepCodeParams = new DeepCodeParamsMock(restApi);
+    analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
+    final String project = "Project5";
+    final String progress = "Progress Indicator";
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+
+    // try to extend expired bundle
+    final int[] reUploadCounter = {0};
+    restApi = new RestApiMockWithBrokenFileUpload() {
+      @Override
+      public @NotNull CreateBundleResponse createBundle(String token, FileHashRequest files) {
+        reUploadCounter[0] = reUploadCounter[0] + 1;
+        final CreateBundleResponse response =
+          new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
+        response.setStatusCode(200);
+        return response;
+      }
+      @Override
+      public @NotNull <Req> CreateBundleResponse extendBundle(String token, String bundleId, Req request) {
+        final CreateBundleResponse response = new CreateBundleResponse();
+        response.setStatusCode(404);
+        return response;
+      }
+    };
+    analysisData = new AnalysisDataBaseMock(pdUtils, hashContentUtils, deepCodeParams, dcLogger, restApi);
+
+    // --------------------------- actual test --------------------
+    analysisData.updateCachedResultsForFiles(project, Collections.singleton("File"), progress);
+
+    assertEquals(
+      "Should be made 2 attempts to re-create bundle if extendBundle does not succeed",
+      2 + 1, // +1 initial createBundle before failed extendBundle
+      reUploadCounter[0]
+    );
+  }
+
+  // make 10 attempts to re-upload files if operation does not succeed
   @Test
   public void reupload_files_if_initial_upload_does_not_succeed() throws IOException {
     final int[] reUploadCounter = {0};
     restApi = new RestApiMockWithBrokenFileUpload() {
+      @Override
+      public @NotNull CreateBundleResponse createBundle(String token, FileHashRequest files) {
+        final CreateBundleResponse response =
+          new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
+        response.setStatusCode(200);
+        return response;
+      }
+
       @Override
       public @NotNull <Req> CreateBundleResponse extendBundle(String token, String bundleId, Req request) {
         reUploadCounter[0] = reUploadCounter[0] + 1;
@@ -174,6 +248,22 @@ public class AnalysisDataTest {
     final boolean[] isCompleted = {false};
 
     restApi = new RestApiMockWithBrokenFileUpload() {
+      @Override
+      public @NotNull CreateBundleResponse createBundle(String token, FileHashRequest files) {
+        final CreateBundleResponse response =
+          new CreateBundleResponse("bundleHash", Collections.singletonList("/filePath"));
+        response.setStatusCode(200);
+        return response;
+      }
+
+      @Override
+      public @NotNull <Req> CreateBundleResponse extendBundle(String token, String bundleId, Req request) {
+        final CreateBundleResponse response =
+          new CreateBundleResponse("bundleHash", Collections.emptyList());
+        response.setStatusCode(200);
+        return response;
+      }
+
       @Override
       public @NotNull CreateBundleResponse checkBundle(String token, String bundleId) {
         final CreateBundleResponse response = new CreateBundleResponse("bundleHash", Collections.emptyList());
