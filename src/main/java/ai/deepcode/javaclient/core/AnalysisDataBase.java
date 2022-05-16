@@ -131,7 +131,7 @@ public abstract class AnalysisDataBase {
           "Request to remove from cache " + files.size() + " files: " + first50FilesName);
       // todo: do we really need mutex here?
       MUTEX.lock();
-      dcLogger.logInfo("MUTEX LOCK");
+      dcLogger.logInfo("MUTEX LOCK, hold count = " + MUTEX.getHoldCount());
       int removeCounter = 0;
       for (Object file : files) {
         if (file != null && isFileInCache(file)) {
@@ -149,8 +149,8 @@ public abstract class AnalysisDataBase {
               + " files. Were not in cache: "
               + (files.size() - removeCounter));
     } finally {
-      dcLogger.logInfo("MUTEX RELEASED");
       MUTEX.unlock();
+      dcLogger.logInfo("MUTEX RELEASED, hold count = " + MUTEX.getHoldCount());
     }
     updateUIonFilesRemovalFromCache(files);
   }
@@ -229,7 +229,7 @@ public abstract class AnalysisDataBase {
     }
     try {
       MUTEX.lock();
-      dcLogger.logInfo("MUTEX LOCK");
+      dcLogger.logInfo("MUTEX LOCK, hold count = " + MUTEX.getHoldCount());
       setUpdateInProgress(project);
       Collection<Object> filesToProceed =
           allProjectFiles.stream()
@@ -256,22 +256,55 @@ public abstract class AnalysisDataBase {
         dcLogger.logInfo("Files to remove: " + filesToRemove.size() + " files: " + filesToRemove);
       }
       mapFile2Suggestions.putAll(
-          retrieveSuggestions(project, filesToProceed, filesToRemove, progress));
+        retrieveSuggestions(project, filesToProceed, filesToRemove, progress)
+      );
+    } catch (BundleIdExpire404Exception e) {
+      // re-try to create bundle from scratch
+      retryFullUpdateCachedResults(project, allProjectFiles, progress, 2);
     } finally {
-      // if (filesToProceed != null && !filesToProceed.isEmpty())
-      dcLogger.logInfo("MUTEX RELEASED");
       MUTEX.unlock();
+      dcLogger.logInfo("MUTEX RELEASED, hold count = " + MUTEX.getHoldCount());
       unsetUpdateInProgress(project);
       pdUtils.refreshPanel(project);
-      // ServiceManager.getService(project, myTodoView.class).refresh();
     }
   }
+
+  private void retryFullUpdateCachedResults(
+    @NotNull Object project,
+    @NotNull Collection<Object> allProjectFiles,
+    @NotNull Object progress,
+    int attemptCounter
+  ) {
+    if (attemptCounter <= 0) {
+      showWarnIfNeeded(project, "Operations with bundle failed. Please try again later or contact Snyk support");
+      return;
+    }
+    removeProjectFromCaches(project);
+    try {
+      mapFile2Suggestions.putAll(
+        retrieveSuggestions(project, allProjectFiles, Collections.emptyList(), progress)
+      );
+    } catch (BundleIdExpire404Exception ex) {
+      retryFullUpdateCachedResults(project, allProjectFiles, progress, attemptCounter - 1);
+    }
+  }
+
+  private static class TokenInvalid401Exception extends Exception {}
+
+  private static class BundleIdExpire404Exception extends Exception {}
+
+  private static class ApiCallNotSucceedException extends Exception {}
 
   private static final Set<Object> projectsLoginRequested = ConcurrentHashMap.newKeySet();
   private static final Set<Object> projectsWithNotSucceedWarnShown = ConcurrentHashMap.newKeySet();
 
-  private boolean isNotSucceed(
-      @NotNull Object project, EmptyResponse response, String internalMessage) {
+  private void showWarnIfNeeded(@NotNull Object project, @NotNull String message) {
+    pdUtils.showWarn(message, project, !projectsWithNotSucceedWarnShown.add(project));
+  }
+
+  private void checkApiCallSucceed(
+      @NotNull Object project, EmptyResponse response, String internalMessage
+  ) throws ApiCallNotSucceedException, TokenInvalid401Exception, BundleIdExpire404Exception {
     if (response.getStatusCode() == 200) {
       projectsWithNotSucceedWarnShown.remove(project);
       projectsLoginRequested.remove(project);
@@ -279,16 +312,15 @@ public abstract class AnalysisDataBase {
       final String fullLogMessage =
           internalMessage + response.getStatusCode() + " " + response.getStatusDescription();
       dcLogger.logWarn(fullLogMessage);
-      final boolean wasWarnShown = projectsWithNotSucceedWarnShown.contains(project);
       if (response.getStatusCode() == 401) {
-        pdUtils.isLogged(project, !projectsLoginRequested.contains(project));
-        projectsLoginRequested.add(project);
+        pdUtils.isLogged(project, !projectsLoginRequested.add(project));
+        throw new TokenInvalid401Exception();
+      } else if (response.getStatusCode() == 404) {
+        throw  new BundleIdExpire404Exception();
       } else {
-        pdUtils.showWarn(response.getStatusDescription(), project, wasWarnShown);
+        throw new ApiCallNotSucceedException();
       }
-      projectsWithNotSucceedWarnShown.add(project);
     }
-    return response.getStatusCode() != 200;
   }
 
   static final int MAX_BUNDLE_SIZE = 4000000; // bytes
@@ -299,7 +331,8 @@ public abstract class AnalysisDataBase {
       @NotNull Object project,
       @NotNull Collection<Object> filesToProceed,
       @NotNull Collection<Object> filesToRemove,
-      @NotNull Object progress) {
+      @NotNull Object progress
+  ) throws BundleIdExpire404Exception {
     if (filesToProceed.isEmpty() && filesToRemove.isEmpty()) {
       dcLogger.logWarn("Both filesToProceed and filesToRemove are empty");
       return EMPTY_MAP;
@@ -307,14 +340,22 @@ public abstract class AnalysisDataBase {
     // no needs to check login here as it will be checked anyway during every api response's check
     // if (!LoginUtils.isLogged(project, false)) return EMPTY_MAP;
 
-    List<String> missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress);
+    List<String> missingFiles = null;
+    try {
+      missingFiles = createBundleStep(project, filesToProceed, filesToRemove, progress);
+    } catch (ApiCallNotSucceedException e) {
+      // re-try createBundleStep from scratch for few times, i.e. do the same as if parent bundle is expired
+      mapProject2BundleId.put(project, "");
+      throw new BundleIdExpire404Exception();
+    } catch (TokenInvalid401Exception e) {
+      return EMPTY_MAP;
+    }
 
     if (filesToProceed.isEmpty()) { // no sense to proceed
       return EMPTY_MAP;
     }
     boolean filesUploaded = uploadFilesStep(project, filesToProceed, missingFiles, progress);
     if (!filesUploaded) { // no sense to proceed
-      dcLogger.logWarn("Files upload FAIL");
       return EMPTY_MAP;
     }
 
@@ -328,8 +369,12 @@ public abstract class AnalysisDataBase {
     pdUtils.progressCheckCanceled(progress);
     List<String> filesToAnalyse =
         filesToProceed.stream().map(pdUtils::getDeepCodedFilePath).collect(Collectors.toList());
-    GetAnalysisResponse getAnalysisResponse =
-        doGetAnalysis(project, bundleId, progress, filesToAnalyse);
+    GetAnalysisResponse getAnalysisResponse;
+    try {
+      getAnalysisResponse = doGetAnalysis(project, bundleId, progress, filesToAnalyse);
+    } catch (TokenInvalid401Exception e) {
+      return EMPTY_MAP;
+    }
     Map<Object, List<SuggestionForFile>> result =
         parseGetAnalysisResponse(project, filesToProceed, getAnalysisResponse, progress);
     dcLogger.logInfo(
@@ -346,7 +391,8 @@ public abstract class AnalysisDataBase {
       @NotNull Object project,
       @NotNull Collection<Object> filesToProceed,
       @NotNull Collection<Object> filesToRemove,
-      @NotNull Object progress) {
+      @NotNull Object progress
+  ) throws BundleIdExpire404Exception, ApiCallNotSucceedException, TokenInvalid401Exception {
     long startTime = System.currentTimeMillis();
     pdUtils.progressSetText(progress, PREPARE_FILES_TEXT);
     dcLogger.logInfo(PREPARE_FILES_TEXT);
@@ -401,7 +447,8 @@ public abstract class AnalysisDataBase {
       @NotNull Object project,
       @NotNull Collection<Object> filesToProceed,
       @NotNull List<String> missingFiles,
-      @NotNull Object progress) {
+      @NotNull Object progress
+  ) throws BundleIdExpire404Exception {
     long startTime = System.currentTimeMillis();
     pdUtils.progressSetText(progress, UPLOADING_FILES_TEXT);
     pdUtils.progressCheckCanceled(progress);
@@ -424,10 +471,20 @@ public abstract class AnalysisDataBase {
                   + " more times:\nmissingFiles = "
                   + missingFiles);
         }
-        uploadFiles(project, filesToProceed, missingFiles, bundleId, progress);
-        List<String> newMissingFiles = checkBundle(project, bundleId);
-        missingFiles = (newMissingFiles != null) ? newMissingFiles : missingFiles;
+        List<String> newMissingFiles;
+        try {
+          uploadFiles(project, filesToProceed, missingFiles, bundleId, progress);
+          newMissingFiles = checkBundle(project, bundleId);
+        } catch (TokenInvalid401Exception e) {
+          break;
+        } catch (ApiCallNotSucceedException e) {
+          newMissingFiles = missingFiles;
+        }
+        missingFiles = newMissingFiles;
         counter++;
+      }
+      if (counter >= attempts) {
+        showWarnIfNeeded(project, "Failed to upload files. Please try again later or contact Snyk support");
       }
     }
     dcLogger.logInfo(
@@ -440,7 +497,8 @@ public abstract class AnalysisDataBase {
       @NotNull Collection<Object> filesToProceed,
       @NotNull List<String> missingFiles,
       @NotNull String bundleId,
-      @NotNull Object progress) {
+      @NotNull Object progress
+  ) throws ApiCallNotSucceedException, TokenInvalid401Exception, BundleIdExpire404Exception {
     Map<String, Object> mapPath2File =
         filesToProceed.stream().collect(Collectors.toMap(pdUtils::getDeepCodedFilePath, it -> it));
     int fileCounter = 0;
@@ -487,20 +545,21 @@ public abstract class AnalysisDataBase {
    *
    * @return list of the current missingFiles or NULL if not succeed.
    */
-  @Nullable
-  private List<String> checkBundle(@NotNull Object project, @NotNull String bundleId) {
+  private List<String> checkBundle(
+    @NotNull Object project,
+    @NotNull String bundleId
+  ) throws TokenInvalid401Exception, BundleIdExpire404Exception, ApiCallNotSucceedException {
     CreateBundleResponse checkBundleResponse =
         restApi.checkBundle(deepCodeParams.getSessionToken(), bundleId);
-    if (isNotSucceed(project, checkBundleResponse, "Bad CheckBundle request: ")) {
-      return null;
-    }
+    checkApiCallSucceed(project, checkBundleResponse, "Bad CheckBundle request: ");
     return checkBundleResponse.getMissingFiles();
   }
 
   private CreateBundleResponse makeNewBundle(
       @NotNull Object project,
       @NotNull FileHashRequest request,
-      @NotNull Collection<Object> filesToRemove) {
+      @NotNull Collection<Object> filesToRemove
+  ) throws BundleIdExpire404Exception, ApiCallNotSucceedException, TokenInvalid401Exception {
     final String parentBundleId = mapProject2BundleId.getOrDefault(project, "");
     if (!parentBundleId.isEmpty()
         && !filesToRemove.isEmpty()
@@ -540,19 +599,17 @@ public abstract class AnalysisDataBase {
         "/DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000")) {
       newBundleId = "";
     }
+    checkApiCallSucceed(project, bundleResponse, "Bad Create/Extend Bundle request: ");
     mapProject2BundleId.put(project, newBundleId);
-    isNotSucceed(project, bundleResponse, "Bad Create/Extend Bundle request: ");
-    // just make new bundle in case of 404 Parent bundle has expired
-    return (bundleResponse.getStatusCode() == 404)
-        ? makeNewBundle(project, request, filesToRemove)
-        : bundleResponse;
+    return bundleResponse;
   }
 
   private void doUploadFiles(
       @NotNull Object project,
       @NotNull Collection<Object> psiFiles,
       @NotNull String bundleId,
-      @NotNull Object progress) {
+      @NotNull Object progress
+  ) throws ApiCallNotSucceedException, TokenInvalid401Exception, BundleIdExpire404Exception {
     dcLogger.logInfo("Uploading " + psiFiles.size() + " files... ");
     if (psiFiles.isEmpty()) return;
 
@@ -571,7 +628,7 @@ public abstract class AnalysisDataBase {
             deepCodeParams.getSessionToken(),
             bundleId,
             new ExtendBundleWithContentRequest(files, Collections.emptyList()));
-    isNotSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
+    checkApiCallSucceed(project, uploadFilesResponse, "Bad UploadFiles request: ");
   }
 
   @NotNull
@@ -579,10 +636,11 @@ public abstract class AnalysisDataBase {
       @NotNull Object project,
       @NotNull String bundleId,
       @NotNull Object progress,
-      List<String> filesToAnalyse) {
+      List<String> filesToAnalyse
+  ) throws TokenInvalid401Exception {
     GetAnalysisResponse response;
     int counter = 0;
-    int failWith404counts = 0;
+    int skippedFailsCount = 0;
     final long timeout = deepCodeParams.getTimeoutForGettingAnalysesMs();
     final long attempts = timeout / PlatformDependentUtilsBase.DEFAULT_DELAY;
     final long endTime = System.currentTimeMillis() + timeout;
@@ -600,16 +658,18 @@ public abstract class AnalysisDataBase {
 
       pdUtils.progressCheckCanceled(progress);
       dcLogger.logInfo(response.toString());
-      if (isNotSucceed(project, response, "Bad GetAnalysis request: ")) {
-        if (response.getStatusCode() != 404 || failWith404counts >= 5) {
+
+      try {
+        checkApiCallSucceed(project, response, "Bad GetAnalysis request: ");
+        skippedFailsCount = 0;
+      } catch (BundleIdExpire404Exception | ApiCallNotSucceedException e) {
+        if (skippedFailsCount >= 5) {
+          showWarnIfNeeded(project, "Failed to get analysis results. Please try again later or contact Snyk support");
           return new GetAnalysisResponse();
         } else {
-          failWith404counts++;
+          skippedFailsCount++;
         }
-      } else {
-        failWith404counts = 0;
       }
-
       double responseProgress = response.getProgress();
       if (responseProgress <= 0 || responseProgress > 1) {
         responseProgress = ((double) counter) / attempts;
@@ -620,13 +680,13 @@ public abstract class AnalysisDataBase {
 
       if (System.currentTimeMillis() >= endTime) {
         dcLogger.logWarn("Timeout expire for waiting analysis results.");
-        pdUtils.showWarn(
-            "Can't get analysis results from the server. Timeout of "
-                + timeout / 1000
-                + " sec. is reached."
-                + " Please, increase timeout or try again later.",
-            project,
-            false);
+        showWarnIfNeeded(
+          project,
+          "Can't get analysis results from the server. Timeout of "
+            + timeout / 1000
+            + " sec. is reached."
+            + " Please, increase timeout or try again later."
+        );
         break;
       }
 

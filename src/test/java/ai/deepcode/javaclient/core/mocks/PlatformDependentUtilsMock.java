@@ -107,7 +107,9 @@ public class PlatformDependentUtilsMock extends PlatformDependentUtilsBase {
   public void showInfo(String message, @Nullable Object project) {}
 
   @Override
-  public void showWarn(String message, @Nullable Object project, boolean wasWarnShown) {}
+  public void showWarn(String message, @Nullable Object project, boolean wasWarnShown) {
+    System.out.println("WARN " + (wasWarnShown ? "" : "!!! shown to user !!! ") + message);
+  }
 
   @Override
   public void showError(String message, @Nullable Object project) {}

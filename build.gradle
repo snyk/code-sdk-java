@@ -6,7 +6,7 @@ plugins {
 
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
-version = "2.3.1"
+version = "2.3.2"
 
 repositories {
     mavenLocal()
