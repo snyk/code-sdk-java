@@ -592,11 +592,8 @@ public abstract class AnalysisDataBase {
               new ExtendBundleWithHashRequest(request, removedFiles));
     }
     String newBundleId = bundleResponse.getBundleHash();
-    // By man: "Extending a bundle by removing all the parent bundle's files is not allowed."
-    // In reality new bundle returned with next bundleID:
-    // .../DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000
-    if (newBundleId.endsWith(
-        "/DEEPCODE_PRIVATE_BUNDLE/0000000000000000000000000000000000000000000000000000000000000000")) {
+    // assigned to every bundle that contains no files
+    if (newBundleId.endsWith("0000000000000000000000000000000000000000000000000000000000000000")) {
       newBundleId = "";
     }
     checkApiCallSucceed(project, bundleResponse, "Bad Create/Extend Bundle request: ");
