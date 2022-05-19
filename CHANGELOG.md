@@ -1,3 +1,6 @@
+## [2.3.3] - 2022-05
+- fix: recognition of bundle that contains no files
+
 ## [2.3.2] - 2022-05
 - fix: make re-try attempts for most api calls if not succeed for any reason (except 401 - auth failed)
 
