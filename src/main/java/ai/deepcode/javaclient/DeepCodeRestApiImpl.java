@@ -1,5 +1,6 @@
 package ai.deepcode.javaclient;
 
+import ai.deepcode.javaclient.core.Base64EncodeRequestInterceptor;
 import ai.deepcode.javaclient.requests.ExtendBundleWithContentRequest;
 import ai.deepcode.javaclient.requests.ExtendBundleWithHashRequest;
 import ai.deepcode.javaclient.requests.FileContentRequest;
@@ -47,7 +48,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
   // Create simple REST adapter which points the baseUrl.
   private static Retrofit buildRetrofit(
-      String baseUrl, boolean disableSslVerification, boolean requestLogging) {
+    String baseUrl, boolean disableSslVerification, boolean requestLogging) {
     HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
     // set your desired log level
     if (requestLogging) {
@@ -57,15 +58,16 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     }
 
     OkHttpClient.Builder builder =
-        new OkHttpClient.Builder()
-            .connectTimeout(100, TimeUnit.SECONDS)
-            .writeTimeout(100, TimeUnit.SECONDS)
-            .readTimeout(100, TimeUnit.SECONDS)
-            .addInterceptor(logging);
+      new OkHttpClient.Builder()
+        .connectTimeout(100, TimeUnit.SECONDS)
+        .writeTimeout(100, TimeUnit.SECONDS)
+        .readTimeout(100, TimeUnit.SECONDS)
+        .addInterceptor(logging)
+        .addInterceptor(new Base64EncodeRequestInterceptor());
 
     if (disableSslVerification) {
       X509TrustManager x509TrustManager = buildUnsafeTrustManager();
-      final TrustManager[] trustAllCertificates = new TrustManager[] {x509TrustManager};
+      final TrustManager[] trustAllCertificates = new TrustManager[]{x509TrustManager};
 
       try {
         final String sslProtocol = "SSL";
@@ -82,24 +84,26 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
 
     OkHttpClient client = builder.build();
     return new Retrofit.Builder()
-        .baseUrl(baseUrl)
-        .client(client)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build();
+      .baseUrl(baseUrl)
+      .client(client)
+      .addConverterFactory(GsonConverterFactory.create())
+      .build();
   }
 
   @NotNull
   private static X509TrustManager buildUnsafeTrustManager() {
     return new X509TrustManager() {
       @Override
-      public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+      public void checkClientTrusted(X509Certificate[] chain, String authType) {
+      }
 
       @Override
-      public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+      public void checkServerTrusted(X509Certificate[] chain, String authType) {
+      }
 
       @Override
       public X509Certificate[] getAcceptedIssuers() {
-        return new X509Certificate[] {};
+        return new X509Certificate[]{};
       }
     };
   }
@@ -108,28 +112,28 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
    * Re-set baseUrl for retrofit instance
    *
    * @param baseUrl new baseUrl. <b>Null</b> or empty "" value will reset to default {@code
-   *     #API_URL}
+   *                #API_URL}
    */
   @Override
   public void setBaseUrl(
     @Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
     retrofit =
-        buildRetrofit(
-            (baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
-            disableSslVerification,
-            requestLogging);
+      buildRetrofit(
+        (baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
+        disableSslVerification,
+        requestLogging);
   }
 
   private interface CreateBundleCall {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-        @Header("Session-Token") String token, @Body FileContentRequest files);
+      @Header("Session-Token") String token, @Body FileContentRequest files);
 
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("bundle")
     Call<CreateBundleResponse> doCreateBundle(
-        @Header("Session-Token") String token, @Body FileHashRequest files);
+      @Header("Session-Token") String token, @Body FileHashRequest files);
   }
 
   private static <Req> CreateBundleResponse doCreateBundle(String token, Req request) {
@@ -138,10 +142,10 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     try {
       if (request instanceof FileContentRequest)
         retrofitResponse =
-            createBundleCall.doCreateBundle(token, (FileContentRequest) request).execute();
+          createBundleCall.doCreateBundle(token, (FileContentRequest) request).execute();
       else if (request instanceof FileHashRequest)
         retrofitResponse =
-            createBundleCall.doCreateBundle(token, (FileHashRequest) request).execute();
+          createBundleCall.doCreateBundle(token, (FileHashRequest) request).execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
@@ -200,8 +204,8 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     //    @retrofit2.http.Headers("Content-Type: application/json")
     @GET("bundle/{bundleId}")
     Call<CreateBundleResponse> doCheckBundle(
-        @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId);
+      @Header("Session-Token") String token,
+      @Path(value = "bundleId", encoded = true) String bundleId);
   }
 
   /**
@@ -249,16 +253,16 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
-        @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId,
-        @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
+      @Header("Session-Token") String token,
+      @Path(value = "bundleId", encoded = true) String bundleId,
+      @Body ExtendBundleWithHashRequest extendBundleWithHashRequest);
 
     @retrofit2.http.Headers("Content-Type: application/json")
     @PUT("bundle/{bundleId}")
     Call<CreateBundleResponse> doExtendBundle(
-        @Header("Session-Token") String token,
-        @Path(value = "bundleId", encoded = true) String bundleId,
-        @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
+      @Header("Session-Token") String token,
+      @Path(value = "bundleId", encoded = true) String bundleId,
+      @Body ExtendBundleWithContentRequest extendBundleWithContentRequest);
   }
 
   /**
@@ -276,14 +280,14 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     try {
       if (request instanceof ExtendBundleWithHashRequest)
         retrofitResponse =
-            extendBundleCall
-                .doExtendBundle(token, bundleId, (ExtendBundleWithHashRequest) request)
-                .execute();
+          extendBundleCall
+            .doExtendBundle(token, bundleId, (ExtendBundleWithHashRequest) request)
+            .execute();
       else if (request instanceof ExtendBundleWithContentRequest)
         retrofitResponse =
-            extendBundleCall
-                .doExtendBundle(token, bundleId, (ExtendBundleWithContentRequest) request)
-                .execute();
+          extendBundleCall
+            .doExtendBundle(token, bundleId, (ExtendBundleWithContentRequest) request)
+            .execute();
       else throw new IllegalArgumentException();
     } catch (IOException e) {
       return new CreateBundleResponse();
@@ -299,7 +303,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
         break;
       case 400:
         result.setStatusDescription(
-            "Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
+          "Attempted to extend a git bundle, or ended up with an empty bundle after the extension");
         break;
       case 401:
         result.setStatusDescription("Missing sessionToken or incomplete login process");
@@ -324,7 +328,7 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     @retrofit2.http.Headers("Content-Type: application/json")
     @POST("analysis")
     Call<GetAnalysisResponse> doGetAnalysis(
-        @Header("Session-Token") String token, @Body GetAnalysisRequest filesToAnalyse);
+      @Header("Session-Token") String token, @Body GetAnalysisRequest filesToAnalyse);
   }
 
   /**
@@ -346,9 +350,9 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
     GetAnalysisCall getAnalysisCall = retrofit.create(GetAnalysisCall.class);
     try {
       Response<GetAnalysisResponse> retrofitResponse =
-          getAnalysisCall
-              .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgDisplayName))
-              .execute();
+        getAnalysisCall
+          .doGetAnalysis(token, new GetAnalysisRequest(bundleId, filesToAnalyse, severity, shard, ideProductName, orgDisplayName))
+          .execute();
       GetAnalysisResponse result = retrofitResponse.body();
       if (result == null) result = new GetAnalysisResponse();
       result.setStatusCode(retrofitResponse.code());
