@@ -1,3 +1,8 @@
+## [2.3.4] - 2022-05
+- update fallbacks for supported extensions and configFiles
+- change: provide ability to distinguish if supported file belong to supported extensions or configFiles 
+- fix: do not proceed (send) files if only configFiles (.gitignore or .dcignore) presence
+
 ## [2.3.3] - 2022-05
 - fix: recognition of bundle that contains no files
 

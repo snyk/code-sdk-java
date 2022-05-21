@@ -34,8 +34,8 @@ public abstract class DeepCodeUtilsBase {
     initSupportedExtentionsAndConfigFiles();
   }
 
-  protected static Set<String> supportedExtensions = Collections.emptySet();
-  protected static Set<String> supportedConfigFiles = Collections.emptySet();
+  private static Set<String> supportedExtensions = Collections.emptySet();
+  private static Set<String> supportedConfigFiles = Collections.emptySet();
 
   public List<Object> getAllSupportedFilesInProject(
     @NotNull Object project, boolean scanAllMissedIgnoreFile, @Nullable Object progress) {
@@ -64,6 +64,12 @@ public abstract class DeepCodeUtilsBase {
     // clean up cashes built without .ignore files parsing
     if (!scanAllMissedIgnoreFile) ignoreInfoHolder.removeProject(project);
 
+    // do not proceed (send) files if only configFiles (.gitignore or .dcignore) presence
+    final boolean containsOnlyConfigFiles = result.stream().allMatch(this::isSupportedConfigFile);
+    if (containsOnlyConfigFiles) {
+      result.clear();
+    }
+
     if (result.isEmpty()) dcLogger.logWarn("Empty supported files list for project: " + project);
     return result;
   }
@@ -77,9 +83,17 @@ public abstract class DeepCodeUtilsBase {
     if (ignoreInfoHolder.isIgnoredFile(file) || isGitIgnoredExternalCheck(file)) return false;
     long fileLength = getFileLength(file);
     boolean supported = 0 < fileLength && fileLength < MAX_FILE_SIZE &&
-      (supportedExtensions.contains(getFileExtention(file)) || supportedConfigFiles.contains(pdUtils.getFileName(file)));
+      (hasSupportedExtension(file) || isSupportedConfigFile(file));
     // DCLogger.getInstance().info("isSupportedFileFormat ends for " + psiFile.getName());
     return supported;
+  }
+
+  public boolean hasSupportedExtension(@NotNull Object file) {
+    return supportedExtensions.contains(getFileExtention(file));
+  }
+
+  public boolean isSupportedConfigFile(@NotNull Object file) {
+    return supportedConfigFiles.contains(pdUtils.getFileName(file));
   }
 
   protected abstract long getFileLength(@NotNull Object file);
@@ -108,23 +122,59 @@ public abstract class DeepCodeUtilsBase {
           + filtersResponse.getStatusCode()
           + " "
           + filtersResponse.getStatusDescription());
+
+      // updated 05.2022
       supportedExtensions =
         new HashSet<>(
           Arrays.asList(
-            "cc", "htm", "cpp", "cxx", "c", "vue", "h", "hpp", "hxx", "es6", "js", "py", "es",
-            "jsx", "java", "tsx", "html", "ts"));
+            "phtml",
+            "vue",
+            "xsd",
+            "slim",
+            "py",
+            "es6",
+            "js",
+            "jsx",
+            "pom",
+            "java",
+            "erb",
+            "xml",
+            "aspx",
+            "tsx",
+            "html",
+            "swift",
+            "cc",
+            "htm",
+            "cpp",
+            "cxx",
+            "c",
+            "h",
+            "go",
+            "haml",
+            "hpp",
+            "hxx",
+            "kt",
+            "rhtml",
+            "cls",
+            "cjs",
+            "es",
+            "ejs",
+            "rb",
+            "cs",
+            "wxs",
+            "mjs",
+            "php",
+            "config",
+            "ts"
+          )
+        );
       supportedConfigFiles =
         new HashSet<>(
           Arrays.asList(
-            "pylintrc",
-            "ruleset.xml",
-            ".eslintrc.json",
-            ".pylintrc",
-            ".eslintrc.js",
-            "tslint.json",
-            ".pmdrc.xml",
-            ".ruleset.xml",
-            ".eslintrc.yml"));
+            ".gitignore",
+            ".dcignore"
+          )
+        );
     }
   }
 
