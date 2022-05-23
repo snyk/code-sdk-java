@@ -6,6 +6,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.Buffer;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,9 +19,8 @@ public class Base64EncodeRequestInterceptor implements Interceptor {
   private static final String MEDIA_TYPE_OCTET_STREAM = "application/octet-stream";
   private static final String MEDIA_TYPE_OCTET_STREAM_GZIP = "gzip";
 
-  @SuppressWarnings("NullableProblems") // we don't have @NotNull annotation
   @Override
-  public Response intercept(Interceptor.Chain chain) throws IOException {
+  public @NotNull Response intercept(Interceptor.Chain chain) throws IOException {
     Request originalRequest = chain.request();
     Request.Builder builder = originalRequest.newBuilder();
 
