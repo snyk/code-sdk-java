@@ -1,3 +1,7 @@
+## [2.3.5] - 2023-01
+- refactor: allow injection of retrofit client in API implementation
+- refactor: remove setBaseURL API method - inject/use your configured retrofit client instead in the API implementaiton.
+
 ## [2.3.4] - 2022-05
 - update fallbacks for supported extensions and configFiles
 - change: provide ability to distinguish if supported file belong to supported extensions or configFiles 

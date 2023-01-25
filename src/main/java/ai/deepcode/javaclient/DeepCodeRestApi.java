@@ -6,20 +6,10 @@ import ai.deepcode.javaclient.responses.CreateBundleResponse;
 import ai.deepcode.javaclient.responses.GetAnalysisResponse;
 import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 public interface DeepCodeRestApi {
-  /**
-   * Re-set baseUrl for retrofit instance
-   *
-   * @param baseUrl new baseUrl. <b>Null</b> or empty "" value will reset to default {@code
-   *                #API_URL}
-   */
-  void setBaseUrl(
-    @Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging);
-
   /**
    * Creates a new bundle with direct file(s) source.
    *
