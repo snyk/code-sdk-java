@@ -12,7 +12,6 @@ import ai.deepcode.javaclient.responses.GetFiltersResponse;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -45,6 +44,13 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
   private static final String API_URL = "https://deeproxy.snyk.io/";
 
   private static Retrofit retrofit = buildRetrofit(API_URL, false, false);
+
+  public DeepCodeRestApiImpl(Retrofit retrofit) {
+    DeepCodeRestApiImpl.retrofit = retrofit;
+  }
+
+  public DeepCodeRestApiImpl() {
+  }
 
   // Create simple REST adapter which points the baseUrl.
   private static Retrofit buildRetrofit(
@@ -106,22 +112,6 @@ public class DeepCodeRestApiImpl implements DeepCodeRestApi {
         return new X509Certificate[]{};
       }
     };
-  }
-
-  /**
-   * Re-set baseUrl for retrofit instance
-   *
-   * @param baseUrl new baseUrl. <b>Null</b> or empty "" value will reset to default {@code
-   *                #API_URL}
-   */
-  @Override
-  public void setBaseUrl(
-    @Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {
-    retrofit =
-      buildRetrofit(
-        (baseUrl == null || baseUrl.isEmpty()) ? API_URL : baseUrl,
-        disableSslVerification,
-        requestLogging);
   }
 
   private interface CreateBundleCall {

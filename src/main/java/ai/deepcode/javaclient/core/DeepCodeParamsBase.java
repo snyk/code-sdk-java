@@ -9,8 +9,6 @@ public abstract class DeepCodeParamsBase {
 
   // Settings
   private boolean isEnable;
-  private String apiUrl;
-  private boolean disableSslVerification;
   private boolean useLinter;
   private int minSeverity;
   private String sessionToken;
@@ -36,8 +34,6 @@ public abstract class DeepCodeParamsBase {
     DeepCodeRestApi restApi
   ) {
     this.isEnable = isEnable;
-    this.apiUrl = apiUrl;
-    this.disableSslVerification = disableSslVerification;
     this.useLinter = useLinter;
     this.minSeverity = minSeverity;
     this.sessionToken = sessionToken;
@@ -85,37 +81,6 @@ public abstract class DeepCodeParamsBase {
 
   public void setMinSeverity(int minSeverity) {
     this.minSeverity = minSeverity;
-  }
-
-  @NotNull
-  public String getApiUrl() {
-    return apiUrl;
-  }
-
-  public void setApiUrl(@NotNull String apiUrl) {
-    setApiUrl(apiUrl, false);
-  }
-
-  public void setApiUrl(@NotNull String apiUrl, boolean disableSslVerification) {
-    setApiUrl(apiUrl, disableSslVerification, false);
-  }
-
-  public void setApiUrl(
-      @NotNull String apiUrl, boolean disableSslVerification, boolean requestLogging) {
-    if (apiUrl.isEmpty()) apiUrl = "https://deeproxy.snyk.io/";
-    if (!apiUrl.endsWith("/")) apiUrl += "/";
-    if (apiUrl.equals(this.apiUrl)) return;
-    this.apiUrl = apiUrl;
-    this.disableSslVerification = disableSslVerification;
-    restApi.setBaseUrl(apiUrl, disableSslVerification, requestLogging);
-  }
-
-  public boolean isDisableSslVerification() {
-    return disableSslVerification;
-  }
-
-  public void setDisableSslVerification(boolean disableSslVerification) {
-    this.disableSslVerification = disableSslVerification;
   }
 
   public boolean isEnable() {

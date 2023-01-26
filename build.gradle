@@ -6,7 +6,7 @@ plugins {
 
 group = "io.snyk.code.sdk"
 archivesBaseName = "snyk-code-client"
-version = "2.3.4"
+version = "2.3.5"
 
 repositories {
     mavenLocal()
@@ -48,7 +48,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'org.jetbrains:annotations:22.0.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.2'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.10.0'
 
     testImplementation 'junit:junit:4.13.2'
     integTestImplementation 'junit:junit:4.13.2'

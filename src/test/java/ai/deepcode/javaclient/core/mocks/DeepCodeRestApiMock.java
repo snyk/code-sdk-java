@@ -13,9 +13,6 @@ import java.util.List;
 
 public class DeepCodeRestApiMock implements DeepCodeRestApi {
   @Override
-  public void setBaseUrl(@Nullable String baseUrl, boolean disableSslVerification, boolean requestLogging) {}
-
-  @Override
   public @NotNull CreateBundleResponse createBundle(String token, FileContentRequest files) {
     throw new UnsupportedOperationException();
   }

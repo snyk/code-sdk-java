@@ -58,29 +58,6 @@ public class DeepCodeRestApiImplTest {
   private static final DeepCodeRestApi restApiClient = new DeepCodeRestApiImpl();
 
   @Test
-  public void _022_setBaseUrl() {
-    System.out.println("\n--------------Set base URL----------------\n");
-    try {
-      doSetBaseUrlTest("", 401);
-      doSetBaseUrlTest("https://www.google.com/", 404);
-      doSetBaseUrlTest("https://deeproxy.snyk.io/", 401);
-    } finally {
-      restApiClient.setBaseUrl("", false, false);
-    }
-  }
-
-  private void doSetBaseUrlTest(String baseUrl, int expectedStatusCode) {
-    restApiClient.setBaseUrl(baseUrl, false, true);
-    EmptyResponse response = restApiClient.checkBundle("blabla", "irrelevant");
-    int status = response.getStatusCode();
-    String description = response.getStatusDescription();
-    System.out.printf(
-        "Check Session call to [%3$s] with token [%1$s] return [%2$d] code: [%4$s]\n",
-        "blabla", status, baseUrl, description);
-    assertEquals(expectedStatusCode, status);
-  }
-
-  @Test
   public void _025_getFilters() {
     System.out.println("\n--------------Get Filters----------------\n");
     GetFiltersResponse response = restApiClient.getFilters(loggedToken);
@@ -101,7 +78,6 @@ public class DeepCodeRestApiImplTest {
   @Test
   public void _030_createBundle_from_source() throws NoSuchAlgorithmException {
     System.out.println("\n--------------Create Bundle from Source----------------\n");
-    restApiClient.setBaseUrl(baseUrl, false, true);
     CreateBundleResponse response = createBundleFromSource(loggedToken);
     assertNotNull(response);
     System.out.printf(
@@ -219,7 +195,6 @@ public class DeepCodeRestApiImplTest {
   }
 
   private FileHashRequest createFileHashRequest(String fakeFileName) {
-    restApiClient.setBaseUrl(baseUrl, false, true);
     final File testFile =
         new File(getClass().getClassLoader().getResource("AnnotatorTest.java").getFile());
     String absolutePath = testFile.getAbsolutePath();
